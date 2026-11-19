@@ -1,6 +1,8 @@
 # Staging do PetskySign (Coolify) + petsky (Preview da Vercel)
 
-Roteiro para testar o PetskySign de ponta a ponta com o app petsky antes de qualquer casa usar. O PetskySign sobe na VPS da Petsky, pelo Coolify, em `assinar-staging.petsky.com.br`. O petsky usa o Preview da Vercel do PR de contratos (`feat/contratos-petskysign`).
+Roteiro para testar o PetskySign de ponta a ponta com o app petsky antes de qualquer casa usar. O PetskySign sobe na VPS da Petsky, pelo Coolify, em `assinar-staging.petsky.com.br`. O petsky usa o Preview da branch `staging` (`https://petsky-git-staging-silvestrels-projects.vercel.app`), depois que o PR de contratos (`feat/contratos-petskysign`) entrar nela.
+
+Só a `staging` tem Preview funcionando: as chaves do Clerk de Preview estão restritas a ela, e o Preview de qualquer outra branch responde 500 em `/app` (`docs/environments.md` do `petsky`). Por isso o código precisa entrar na `staging`, e as variáveis abaixo valem para ela.
 
 Decisão do lado da infra: **DEC-025** do `petsky-infra`. Vale só para staging, com **dados de teste**. Contrato de tutor de verdade na VPS pede outra decisão (ver "Saída" no fim).
 
@@ -105,18 +107,19 @@ Depois do primeiro backup, **teste a restauração** do banco num Postgres desca
 
    Guarde o `psk_...` e o id da chave. A chave não é mostrada de novo.
 
-## 7. Preview do petsky (Vercel)
+## 7. Preview do petsky (Vercel, branch `staging`)
 
+0. Faça o merge, na `staging`, do PR de contratos do `petsky` (`feat/contratos-petskysign` → `staging`). O push na `staging` gera o Preview.
 1. Em **Settings → Deployment Protection → Protection Bypass for Automation**, gere o segredo de bypass. Sem ele, o webhook do PetskySign leva 401 da proteção da Vercel.
-2. Ainda no Terminal do Coolify, cadastre o webhook. Use a **URL fixa da branch**, não a de um deploy:
+2. Ainda no Terminal do Coolify, cadastre o webhook na **URL fixa da `staging`**, não na de um deploy:
 
    ```bash
-   npm run api-key -- webhook <id-da-chave> --url "https://<projeto>-git-feat-contratos-petskysign-<time>.vercel.app/api/webhooks/petskysign?x-vercel-protection-bypass=<segredo-do-bypass>"
+   npm run api-key -- webhook <id-da-chave> --url "https://petsky-git-staging-silvestrels-projects.vercel.app/api/webhooks/petskysign?x-vercel-protection-bypass=<segredo-do-bypass>"
    ```
 
    Guarde o `whsec_...`.
 
-3. Em **Settings → Environment Variables**, escopo **Preview**, só na branch `feat/contratos-petskysign`:
+3. Em **Settings → Environment Variables**, escopo **Preview**, só na branch `staging`. Com `CONTRACT_PROVIDER=petskysign`, **todo envio de contrato no staging** passa pelo PetskySign. Avise quem mais testa no staging, ou tire a variável quando o teste acabar.
 
    | Variável                    | Valor                                             |
    | --------------------------- | ------------------------------------------------- |
@@ -126,11 +129,11 @@ Depois do primeiro backup, **teste a restauração** do banco num Postgres desca
    | `PETSKYSIGN_WEBHOOK_SECRET` | o `whsec_...`                                     |
    | `PETSKYSIGN_SANDBOX`        | `true` (os contratos saem marcados como de teste) |
 
-4. Faça **Redeploy** do Preview para as variáveis valerem.
+4. Faça **Redeploy** do Preview da `staging` para as variáveis valerem.
 
 ## 8. Roteiro de teste
 
-Use uma empresa de teste no Preview. Ela precisa de logo e telefone no cadastro, para conferir a marca. Use também um tutor de teste com o seu celular.
+Use uma empresa de teste no Preview da `staging`. Ela precisa de logo e telefone no cadastro, para conferir a marca. Use também um tutor de teste com o seu celular.
 
 | #   | Faça                                                          | Confira                                                                                          |
 | --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
