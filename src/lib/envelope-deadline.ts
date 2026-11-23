@@ -3,6 +3,7 @@ import {
   MAX_ENVELOPE_DEADLINE_DAYS,
   SIGNING_LINK_TTL_SECONDS,
 } from "./types/domain.ts";
+import { appLocale, displayTimeZone, intlLocale } from "./petsky/locale.ts";
 
 // The deadline of an envelope: the moment after which nobody can sign it.
 //
@@ -93,18 +94,23 @@ export function nextSignerLinkExpiresAt(
     : turnStartsAt + SIGNING_LINK_TTL_SECONDS;
 }
 
-const deadlineFormatter = new Intl.DateTimeFormat("en-US", {
+const deadlineFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   hour: "numeric",
   minute: "2-digit",
   month: "long",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
   year: "numeric",
 });
 
-/** "December 12, 2026 at 9:20 PM UTC" */
+/**
+ * "December 12, 2026 at 9:20 PM UTC"; in pt-BR, Brasília time with no zone
+ * named, like every other date Petsky shows.
+ */
 export function formatDeadline(unixTimestamp: number): string {
-  return `${deadlineFormatter
+  const formatted = deadlineFormatter
     .format(new Date(unixTimestamp * 1000))
-    .replace(/[  ]/g, " ")} UTC`;
+    .replace(/[  ]/g, " ");
+
+  return appLocale() === "pt-BR" ? formatted : `${formatted} UTC`;
 }

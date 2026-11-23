@@ -31,6 +31,7 @@ import {
   StorageObjectNotFoundError,
   type StorageService,
 } from "./services/storage.ts";
+import { displayTimeZone, intlLocale } from "./petsky/locale.ts";
 
 // A template is a document, the fields placed on it and its signing order,
 // kept so the same thing can be sent again. It names no one: each place in
@@ -129,10 +130,10 @@ const TEMPLATE_COLUMNS = `
   created_at AS "createdAt"
 `;
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
+const dateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
   year: "numeric",
 });
 

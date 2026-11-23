@@ -485,7 +485,7 @@ export function EnvelopeDetailShell({
         </Link>
 
         <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-5">
+          <div className="flex min-w-0 flex-1 items-center gap-5 lg:min-w-[18rem]">
             <span className="hidden h-28 shrink-0 items-center justify-center rounded-2xl bg-(--surface) px-4 py-3 sm:flex">
               <DocumentThumbnail
                 envelopeId={envelopeId}
@@ -526,7 +526,7 @@ export function EnvelopeDetailShell({
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:max-w-[30rem] lg:justify-end">
             {activeRecord.status === "draft" ? (
               <>
                 <ShellButton

@@ -127,6 +127,7 @@ import { PERMITTED_USE_VERSION } from "./permitted-uses.ts";
 import { hashAccessCode } from "./signer-checks.ts";
 import { escapeHtml } from "./utils/html.ts";
 import { isPlaceholderEmail } from "./petsky/placeholder-email.ts";
+import { displayTimeZone, intlLocale, tr } from "./petsky/locale.ts";
 
 type CreateDraftEnvelopeOptions = {
   database?: DbPool;
@@ -551,26 +552,26 @@ const TIMELINE_TONE_MAP: Record<
   voided: "danger",
 };
 
-const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
+const shortDateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
   year: "numeric",
 });
 
-const longDateFormatter = new Intl.DateTimeFormat("en-US", {
+const longDateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   month: "long",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
   year: "numeric",
 });
 
-const timelineDateFormatter = new Intl.DateTimeFormat("en-US", {
+const timelineDateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   hour: "numeric",
   minute: "2-digit",
   month: "short",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
 });
 
 export async function createDraftEnvelope(
@@ -1670,54 +1671,77 @@ function buildTimelineDescription(event: AuditEventRecord): string {
 
   switch (event.event) {
     case "copied":
-      return "Copied from an earlier envelope";
+      return tr("Copied from an earlier envelope");
     case "created":
-      return "Envelope created";
+      return tr("Envelope created");
     case "sent":
-      return `Sent to ${targetLabel}`;
+      return tr("Sent to {targetLabel}", { targetLabel });
     case "viewed":
-      return `Viewed by ${targetLabel}`;
+      return tr("Viewed by {targetLabel}", { targetLabel });
     case "signed":
       return typeof event.metadata?.part11 === "object" &&
         event.metadata.part11 !== null &&
         "meaning" in event.metadata.part11 &&
         typeof event.metadata.part11.meaning === "string"
-        ? `Signed by ${targetLabel} (${signatureMeaningLabel(parseSignatureMeaning(event.metadata.part11.meaning)) ?? event.metadata.part11.meaning}, password given again)`
+        ? tr("Signed by {targetLabel} ({value}, password given again)", {
+            targetLabel,
+            value:
+              signatureMeaningLabel(
+                parseSignatureMeaning(event.metadata.part11.meaning),
+              ) ?? event.metadata.part11.meaning,
+          })
         : describeProviderSignature(event.metadata)
-          ? `Signed by ${targetLabel} ${describeProviderSignature(event.metadata)!}`
-          : `Signed by ${targetLabel}`;
+          ? tr("Signed by {targetLabel} {value}", {
+              targetLabel,
+              value: describeProviderSignature(event.metadata)!,
+            })
+          : tr("Signed by {targetLabel}", { targetLabel });
     case "declined":
       return declineReason
-        ? `Declined by ${targetLabel} — ${declineReason}`
-        : `Declined by ${targetLabel}`;
+        ? tr("Declined by {targetLabel} — {declineReason}", {
+            targetLabel,
+            declineReason,
+          })
+        : tr("Declined by {targetLabel}", { targetLabel });
     case "reminded_manual":
-      return `Manual reminder sent to ${targetLabel}`;
+      return tr("Manual reminder sent to {targetLabel}", { targetLabel });
     case "reminded_auto":
-      return `Automatic reminder sent to ${targetLabel}`;
+      return tr("Automatic reminder sent to {targetLabel}", { targetLabel });
     case "consented":
-      return `${targetLabel} agreed to use electronic records and signatures`;
+      return tr(
+        "{targetLabel} agreed to use electronic records and signatures",
+        { targetLabel },
+      );
     case "verified":
-      return `${targetLabel} confirmed their identity`;
+      return tr("{targetLabel} confirmed their identity", { targetLabel });
     case "verification_failed":
-      return `Wrong identity code entered for ${targetLabel}`;
+      return tr("Wrong identity code entered for {targetLabel}", {
+        targetLabel,
+      });
     case "email_sent":
       return typeof event.metadata?.recipient === "string"
-        ? `Email accepted for delivery to ${event.metadata.recipient}`
-        : "Email accepted for delivery";
+        ? tr("Email accepted for delivery to {recipient}", {
+            recipient: event.metadata.recipient,
+          })
+        : tr("Email accepted for delivery");
     case "completed":
-      return "Final signed PDF and certificate generated";
+      return tr("Final signed PDF and certificate generated");
     case "voided":
       return declineReason
-        ? `Envelope voided by sender — ${declineReason}`
-        : "Envelope voided by sender";
+        ? tr("Envelope voided by sender — {declineReason}", { declineReason })
+        : tr("Envelope voided by sender");
     case "reauthentication_failed":
-      return `Wrong password given while signing for ${targetLabel}`;
+      return tr("Wrong password given while signing for {targetLabel}", {
+        targetLabel,
+      });
     case "deadline_changed":
       return typeof event.metadata?.expiresAt === "number"
-        ? `Deadline set to ${formatDeadline(event.metadata.expiresAt)}`
-        : "Deadline changed";
+        ? tr("Deadline set to {expiresAt}", {
+            expiresAt: formatDeadline(event.metadata.expiresAt),
+          })
+        : tr("Deadline changed");
     case "expired":
-      return "Deadline passed before everyone signed";
+      return tr("Deadline passed before everyone signed");
     case "signer_corrected":
       return describeSignerCorrectedEvent(event.metadata);
     default:
@@ -1731,31 +1755,37 @@ function buildDetailSignerStatusLabel(
   previousSignerName?: string,
 ): string | undefined {
   if (signer.status === "signed" && signer.signedAt) {
-    return `Signed ${formatShortDate(signer.signedAt)}`;
+    return tr("Signed {signedAt}", {
+      signedAt: formatShortDate(signer.signedAt),
+    });
   }
 
   if (signer.status === "declined" && signer.declinedAt) {
-    return `Declined ${formatShortDate(signer.declinedAt)}`;
+    return tr("Declined {declinedAt}", {
+      declinedAt: formatShortDate(signer.declinedAt),
+    });
   }
 
   if (signer.status === "notified") {
     const sentAt = signer.lastNotifiedAt ?? signer.turnStartedAt;
     if (envelope.status === "voided") {
       return sentAt
-        ? `Notified ${formatShortDate(sentAt)}`
-        : "Notified before void";
+        ? tr("Notified {sentAt}", { sentAt: formatShortDate(sentAt) })
+        : tr("Notified before void");
     }
 
-    return sentAt ? `Sent ${formatShortDate(sentAt)}` : undefined;
+    return sentAt
+      ? tr("Sent {sentAt}", { sentAt: formatShortDate(sentAt) })
+      : undefined;
   }
 
   if (envelope.status === "draft") {
     return previousSignerName
-      ? `Ready to notify after ${previousSignerName}`
-      : "Ready to notify after send";
+      ? tr("Ready to notify after {previousSignerName}", { previousSignerName })
+      : tr("Ready to notify after send");
   }
 
-  return "No notification sent";
+  return tr("No notification sent");
 }
 
 function buildDetailSignerMetaLabel(
@@ -1764,30 +1794,36 @@ function buildDetailSignerMetaLabel(
   assignedFieldCount: number,
 ): string {
   if (envelope.status === "voided" && signer.status === "notified") {
-    return "Last notified signer before void";
+    return tr("Last notified signer before void");
   }
 
   if (signer.status === "declined" && signer.declineReason) {
-    return `Decline reason: ${signer.declineReason}`;
+    return tr("Decline reason: {declineReason}", {
+      declineReason: signer.declineReason,
+    });
   }
 
   if (envelope.status === "declined" && signer.status === "pending") {
-    return "Skipped after decline";
+    return tr("Skipped after decline");
   }
 
   if (envelope.status === "voided" && signer.status === "pending") {
-    return "Not reached before void";
+    return tr("Not reached before void");
   }
 
   if (signer.status === "signed") {
-    return `${pluralize(assignedFieldCount, "field")} completed`;
+    return assignedFieldCount === 1
+      ? tr("1 field completed")
+      : tr("{count} fields completed", { count: assignedFieldCount });
   }
 
   if (signer.status === "notified") {
-    return "Current signer";
+    return tr("Current signer");
   }
 
-  return `${pluralize(assignedFieldCount, "field")} assigned`;
+  return assignedFieldCount === 1
+    ? tr("1 field assigned")
+    : tr("{count} fields assigned", { count: assignedFieldCount });
 }
 
 export async function listEnvelopesForUser(
