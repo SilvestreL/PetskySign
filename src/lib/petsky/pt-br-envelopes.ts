@@ -374,4 +374,5 @@ export const PT_BR_ENVELOPES: Readonly<Record<string, string>> = {
   "{length} fields placed": "{length} campos posicionados",
   "Click the page to place {field} for {name}.":
     "Clique na página para posicionar {field} para {name}.",
+  "{signed} of {total} signed": "{signed} de {total} assinaram",
 };
