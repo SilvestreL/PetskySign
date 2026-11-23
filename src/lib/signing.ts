@@ -2582,6 +2582,9 @@ export async function submitSigningForToken(
             UPDATE signers
             SET
               status = 'signed',
+              -- PetskySign: kept for the page after signing (see
+              -- signer-completion.ts); it can no longer be used to sign.
+              signed_link_token_hash = signing_token_hash,
               signing_token_hash = NULL,
               signing_token_expires_at = NULL,
               signed_at = $1,
@@ -2851,6 +2854,9 @@ export async function submitSigningForToken(
             UPDATE signers
             SET
               status = 'signed',
+              -- PetskySign: kept for the page after signing (see
+              -- signer-completion.ts); it can no longer be used to sign.
+              signed_link_token_hash = signing_token_hash,
               signing_token_hash = NULL,
               signing_token_expires_at = NULL,
               signed_at = $1,

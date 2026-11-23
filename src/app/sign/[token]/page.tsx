@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { BrandingProvider } from "@/components/layout/branding-provider";
 import { SigningShell } from "@/components/signing/signing-shell";
@@ -8,6 +9,7 @@ import {
   getDocumentBranding,
   getDocumentBrandingForToken,
 } from "@/lib/petsky/document-branding";
+import { getSignerCompletionForToken } from "@/lib/petsky/signer-completion";
 import { getBranding } from "@/lib/settings";
 import { getClientIpAddress } from "@/lib/security/request";
 import type { SigningVerificationState } from "@/lib/schemas/signing";
@@ -64,6 +66,18 @@ export default async function SignPage({
     } else {
       initialState = "error";
     }
+  }
+
+  // PetskySign: a signer who opens their link again after signing goes to
+  // the page with their copy and its status (sign/[token]/done).
+  if (
+    initialState === "already-signed" ||
+    (initialState === "expired" &&
+      (await getSignerCompletionForToken(token, { database: getDb() })
+        .then((completion) => completion?.signerStatus === "signed")
+        .catch(() => false)))
+  ) {
+    redirect(`/sign/${encodeURIComponent(token)}/done`);
   }
 
   // PetskySign: the business that sent the document, over the install's

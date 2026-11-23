@@ -804,6 +804,47 @@ export async function getPublicEnvelopeDownloadForToken(
   });
 }
 
+/**
+ * PetskySign: the signed PDF or certificate for a signer who has just
+ * signed, served from the page they land on (signer-completion.ts decides
+ * whether they may still have it). The certificate is the recipients'
+ * version, without the other signers' addresses, as in the emailed links.
+ */
+export async function getSignerEnvelopeDownload(
+  signerId: string,
+  envelopeId: string,
+  fileType: unknown,
+  {
+    database = getDb(),
+  }: {
+    database?: DbExecutor;
+  } = {},
+): Promise<EnvelopeDownloadResult> {
+  const parsedFileType = downloadFileTypeSchema.parse(fileType);
+  const envelope = await getEnvelopeById(envelopeId, database);
+
+  if (
+    !envelope ||
+    envelope.status !== "completed" ||
+    !(await isRecipientAuthorizedForEnvelope(signerId, envelope.id, database))
+  ) {
+    throw new DownloadAccessError(
+      "This download link is invalid or has expired.",
+      410,
+    );
+  }
+
+  const storageService = createStorageService();
+
+  if (parsedFileType === "signed") {
+    return buildSignedPdfDownload(envelope, database, storageService);
+  }
+
+  return buildCertificateDownload(envelope, database, storageService, {
+    redactForRecipients: true,
+  });
+}
+
 export type RenewedDownloadLinks = {
   /** The signer's address with most of it hidden, to show on the page. */
   maskedEmail: string;

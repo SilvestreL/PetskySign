@@ -12,9 +12,25 @@ type SigningDoneShellProps = {
    */
   deliveryChannel?: "email" | "link";
   envelopeTitle?: string | null;
+  /**
+   * PetskySign: what this signer can see and download now, from their
+   * signing link (see signer-completion.ts). Null when the link no longer
+   * matches a signer: the page then only confirms the signature.
+   */
+  completion?: {
+    awaitingCount: number;
+    certificateUrl: string | null;
+    completedAtLabel: string | null;
+    downloadUntilLabel: string | null;
+    signedAtLabel: string | null;
+    signedPdfSha256: string | null;
+    signedPdfUrl: string | null;
+    signerName: string;
+  } | null;
 };
 
 export function SigningDoneShell({
+  completion = null,
   deliveryChannel = "email",
   envelopeTitle,
 }: SigningDoneShellProps) {
@@ -57,33 +73,151 @@ export function SigningDoneShell({
             </svg>
           </div>
 
-          <h1 className="mt-7 text-[clamp(1.875rem,4.5vw,2.375rem)] font-extrabold tracking-[-0.035em] text-(--fg)">
-            {tr("You're all done.")}
-          </h1>
-          <p className="mx-auto mt-4 max-w-[480px] text-base leading-7 text-(--secondary)">
-            {tr("Your signature has been recorded for")}{" "}
-            <span className="font-bold text-(--fg)">
-              &quot;{resolvedEnvelopeTitle}&quot;
-            </span>
-            .
-          </p>
-          <p className="mx-auto mt-3 max-w-[480px] text-base leading-7 text-(--secondary)">
-            {deliveryChannel === "link"
-              ? tr(
-                  "{business} will send you the signed document once all parties have signed.",
-                  { business: productName },
-                )
-              : tr(
-                  "You'll receive an email with the signed document once all parties have signed.",
-                )}
-          </p>
-          <p className="mt-8 inline-flex rounded-full bg-(--surface) px-4 py-2 text-sm font-semibold text-(--secondary)">
-            {tr("You can close this tab.")}
-          </p>
+          {completion?.signedPdfUrl ? (
+            <CompletedDetails
+              completion={completion}
+              title={resolvedEnvelopeTitle}
+            />
+          ) : (
+            <>
+              <h1 className="mt-7 text-[clamp(1.875rem,4.5vw,2.375rem)] font-extrabold tracking-[-0.035em] text-(--fg)">
+                {tr("You're all done.")}
+              </h1>
+              <p className="mx-auto mt-4 max-w-[480px] text-base leading-7 text-(--secondary)">
+                {tr('Your signature has been recorded for "{title}".', {
+                  title: resolvedEnvelopeTitle,
+                })}
+              </p>
+              {completion && completion.awaitingCount > 0 ? (
+                <p className="mx-auto mt-3 max-w-[480px] text-base leading-7 text-(--secondary)">
+                  {completion.awaitingCount === 1
+                    ? tr(
+                        "One more person still has to sign. When they do, open this same link again to download the signed document.",
+                      )
+                    : tr(
+                        "{count} more people still have to sign. When they do, open this same link again to download the signed document.",
+                        { count: completion.awaitingCount },
+                      )}
+                </p>
+              ) : (
+                <p className="mx-auto mt-3 max-w-[480px] text-base leading-7 text-(--secondary)">
+                  {deliveryChannel === "link"
+                    ? tr(
+                        "{business} will send you the signed document once all parties have signed.",
+                        { business: productName },
+                      )
+                    : tr(
+                        "You'll receive an email with the signed document once all parties have signed.",
+                      )}
+                </p>
+              )}
+              <p className="mt-8 inline-flex rounded-full bg-(--surface) px-4 py-2 text-sm font-semibold text-(--secondary)">
+                {tr("You can close this tab.")}
+              </p>
+            </>
+          )}
         </section>
       </main>
 
       <PublicLegalFooter />
     </div>
+  );
+}
+
+type Completion = NonNullable<SigningDoneShellProps["completion"]>;
+
+/** PetskySign: everyone has signed; the signer can take their copy. */
+function CompletedDetails({
+  completion,
+  title,
+}: {
+  completion: Completion;
+  title: string;
+}) {
+  return (
+    <>
+      <h1 className="mt-7 text-[clamp(1.875rem,4.5vw,2.375rem)] font-extrabold tracking-[-0.035em] text-(--fg)">
+        {tr("Document signed")}
+      </h1>
+      <p className="mx-auto mt-4 max-w-[480px] text-base leading-7 text-(--secondary)">
+        {tr('Everyone has signed "{title}". Download your copy below.', {
+          title,
+        })}
+      </p>
+
+      <dl className="mx-auto mt-8 max-w-[480px] space-y-3 rounded-2xl bg-(--surface) px-5 py-4 text-left text-sm">
+        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+          <dt className="text-(--secondary)">{tr("Signed by")}</dt>
+          <dd className="font-semibold text-(--fg)">{completion.signerName}</dd>
+        </div>
+        {completion.signedAtLabel ? (
+          <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+            <dt className="text-(--secondary)">{tr("Your signature")}</dt>
+            <dd className="font-semibold text-(--fg)">
+              {completion.signedAtLabel}
+            </dd>
+          </div>
+        ) : null}
+        {completion.completedAtLabel ? (
+          <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+            <dt className="text-(--secondary)">{tr("Finished")}</dt>
+            <dd className="font-semibold text-(--fg)">
+              {completion.completedAtLabel}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+
+      <div className="mx-auto mt-6 flex max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
+        <a
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-(--accent) px-5 text-[0.9375rem] font-semibold text-white transition hover:bg-(--accent-hover)"
+          download
+          href={completion.signedPdfUrl ?? undefined}
+        >
+          {tr("Download signed document")}
+        </a>
+        {completion.certificateUrl ? (
+          <a
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-(--border-strong) bg-(--paper) px-5 text-[0.9375rem] font-semibold text-(--fg) transition hover:border-(--border-hover)"
+            download
+            href={completion.certificateUrl}
+          >
+            {tr("Download certificate")}
+          </a>
+        ) : null}
+      </div>
+
+      {completion.signedPdfSha256 ? (
+        <div className="mx-auto mt-8 max-w-[480px] rounded-2xl border border-(--border) px-5 py-4 text-left">
+          <p className="text-sm font-semibold text-(--fg)">
+            {tr("Verification code (SHA-256)")}
+          </p>
+          <p className="mt-2 font-mono text-xs leading-5 break-all text-(--secondary)">
+            {completion.signedPdfSha256}
+          </p>
+          <p className="mt-3 text-sm text-(--secondary)">
+            {tr(
+              "Anyone can check that a copy of this document is authentic at",
+            )}{" "}
+            <a
+              className="font-semibold text-(--accent-ink) underline underline-offset-4"
+              href="/verify"
+            >
+              {tr("Verify a document")}
+            </a>
+            .
+          </p>
+        </div>
+      ) : null}
+
+      {completion.downloadUntilLabel ? (
+        <p className="mx-auto mt-6 max-w-[480px] text-xs leading-5 text-(--tertiary)">
+          {tr(
+            "These downloads stay available on this link until {date}. Save your copy.",
+            { date: completion.downloadUntilLabel },
+          )}
+        </p>
+      ) : null}
+    </>
   );
 }
