@@ -333,4 +333,28 @@ export const PT_BR: Readonly<Record<string, string>> = {
 
   // Páginas públicas
   "Last updated {date}": "Atualizado em {date}",
+  "Too many requests. Please try again soon.":
+    "Muitas tentativas. Tente de novo daqui a pouco.",
+  "This download is no longer available. Ask the business that sent the document for a copy.":
+    "Este download não está mais disponível. Peça uma cópia para quem enviou o documento.",
+  "Unable to start this download.": "Não foi possível iniciar o download.",
+  'Your signature has been recorded for "{title}".':
+    'Sua assinatura foi registrada em "{title}".',
+  "One more person still has to sign. When they do, open this same link again to download the signed document.":
+    "Falta mais uma pessoa assinar. Quando ela assinar, abra este mesmo link de novo para baixar o documento assinado.",
+  "{count} more people still have to sign. When they do, open this same link again to download the signed document.":
+    "Faltam mais {count} pessoas assinarem. Quando todas assinarem, abra este mesmo link de novo para baixar o documento assinado.",
+  "Document signed": "Documento assinado",
+  'Everyone has signed "{title}". Download your copy below.':
+    'Todos assinaram "{title}". Baixe sua cópia abaixo.',
+  "Signed by": "Assinado por",
+  "Your signature": "Sua assinatura",
+  Finished: "Concluído em",
+  "Download signed document": "Baixar documento assinado",
+  "Verification code (SHA-256)": "Código de verificação (SHA-256)",
+  "Anyone can check that a copy of this document is authentic at":
+    "Qualquer pessoa pode conferir se uma cópia deste documento é autêntica em",
+  "These downloads stay available on this link until {date}. Save your copy.":
+    "Os downloads ficam disponíveis neste link até {date}. Guarde sua cópia.",
+  "{signers} · {fields}": "{signers} · {fields}",
 };
