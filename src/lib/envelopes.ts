@@ -1435,7 +1435,9 @@ function buildDashboardContextLine(
 
   if (envelope.status === "completed") {
     const sentTo = signers.map(who).join(", ");
-    return sentTo.length > 0 ? `Sent to: ${sentTo}` : "Sent to: —";
+    return sentTo.length > 0
+      ? tr("Sent to: {sentTo}", { sentTo })
+      : tr("Sent to: —");
   }
 
   if (envelope.status === "sent") {
@@ -1444,24 +1446,40 @@ function buildDashboardContextLine(
       signers.find((signer) => signer.status === "pending");
 
     if (isEnvelopeExpired(envelope, Math.floor(Date.now() / 1000))) {
-      return `Expired ${formatShortDate(envelope.expiresAt!)} · was waiting on: ${currentSigner ? who(currentSigner) : "—"}`;
+      return tr("Expired {date} · was waiting on: {who}", {
+        date: formatShortDate(envelope.expiresAt!),
+        who: currentSigner ? who(currentSigner) : "—",
+      });
     }
 
-    return `Waiting on: ${currentSigner ? who(currentSigner) : "—"}`;
+    return tr("Waiting on: {who}", {
+      who: currentSigner ? who(currentSigner) : "—",
+    });
   }
 
   if (envelope.status === "declined") {
     const declinedSigner = signers.find(
       (signer) => signer.status === "declined",
     );
-    return `Declined by: ${declinedSigner ? who(declinedSigner) : "—"}`;
+    return tr("Declined by: {who}", {
+      who: declinedSigner ? who(declinedSigner) : "—",
+    });
   }
 
   if (envelope.status === "voided") {
-    return `Voided on ${formatShortDate(envelope.voidedAt ?? envelope.updatedAt)}`;
+    return tr("Voided on {date}", {
+      date: formatShortDate(envelope.voidedAt ?? envelope.updatedAt),
+    });
   }
 
-  return `${pluralize(signers.length, "signer")} · ${pluralize(fields.length, "field")} placed`;
+  return tr("{signers} · {fields} placed", {
+    signers: tr(signers.length === 1 ? "{count} signer" : "{count} signers", {
+      count: signers.length,
+    }),
+    fields: tr(fields.length === 1 ? "{count} field" : "{count} fields", {
+      count: fields.length,
+    }),
+  });
 }
 
 const dashboardStatusLabels: Record<EnvelopeRecord["status"], string> = {

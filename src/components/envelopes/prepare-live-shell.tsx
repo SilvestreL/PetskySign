@@ -770,7 +770,7 @@ function PrepareLiveShellContent({
         <aside className="hidden lg:block">
           <div className="sticky top-[4.5rem] flex max-h-[calc(100vh-4.5rem)] flex-col gap-4 overflow-y-auto py-5 pl-5">
             <section className="panel space-y-3 rounded-[1.25rem] p-4">
-              <p className="section-eyebrow px-1">Fields</p>
+              <p className="section-eyebrow px-1">{tr("Fields")}</p>
               <div className="grid gap-2">
                 {fieldTools.map((tool) => (
                   <FieldToolButton
@@ -792,11 +792,13 @@ function PrepareLiveShellContent({
 
             <section className="panel space-y-3 rounded-[1.25rem] p-4">
               <div className="flex items-center justify-between px-1">
-                <p className="section-eyebrow">Signers</p>
+                <p className="section-eyebrow">{tr("Signers")}</p>
                 <span className="text-xs font-medium text-(--tertiary)">
                   {fields.length === 1
-                    ? "1 field placed"
-                    : `${String(fields.length)} fields placed`}
+                    ? tr("1 field placed")
+                    : tr("{length} fields placed", {
+                        length: String(fields.length),
+                      })}
                 </span>
               </div>
               <div className="space-y-2">
@@ -1073,15 +1075,10 @@ function PrepareLiveShellContent({
                           {tr("Ready to place")}
                         </p>
                         <p className="mt-1 text-sm text-(--secondary)">
-                          Click the page to place{" "}
-                          <span className="font-semibold text-(--fg)">
-                            {getFieldTool(armedTool).label}
-                          </span>{" "}
-                          for{" "}
-                          <span className="font-semibold text-(--fg)">
-                            {selectedSigner.name}
-                          </span>
-                          .
+                          {tr("Click the page to place {field} for {name}.", {
+                            field: getFieldTool(armedTool).label,
+                            name: selectedSigner.name,
+                          })}
                         </p>
                       </div>
                     ) : null}
@@ -1114,7 +1111,7 @@ function PrepareLiveShellContent({
         <aside className="hidden lg:block">
           <div className="sticky top-[4.5rem] flex max-h-[calc(100vh-4.5rem)] flex-col gap-4 overflow-y-auto py-5 pr-5">
             <section className="panel space-y-3 rounded-[1.25rem] p-4">
-              <p className="section-eyebrow px-1">Inspector</p>
+              <p className="section-eyebrow px-1">{tr("Inspector")}</p>
               <div>
                 {selectedField && fieldEditorActions ? (
                   <FieldEditor
@@ -1157,7 +1154,7 @@ function PrepareLiveShellContent({
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-(--surface-strong)" />
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="section-eyebrow">Fields</p>
+                <p className="section-eyebrow">{tr("Fields")}</p>
                 <button
                   className="text-sm font-bold text-(--accent-ink)"
                   onClick={() => setIsMobileToolsOpen(false)}
@@ -1274,7 +1271,9 @@ function SignerCard({
             {signer.name}
           </p>
           <p className="mt-0.5 text-xs text-(--secondary)">
-            {fieldCount} field{fieldCount === 1 ? "" : "s"} placed
+            {fieldCount === 1
+              ? tr("1 field placed")
+              : tr("{length} fields placed", { length: String(fieldCount) })}
           </p>
           <p
             className={`mt-1.5 text-xs font-bold ${
