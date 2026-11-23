@@ -1472,13 +1472,14 @@ function buildDashboardContextLine(
     });
   }
 
-  return tr("{signers} · {fields} placed", {
+  return tr("{signers} · {fields}", {
     signers: tr(signers.length === 1 ? "{count} signer" : "{count} signers", {
       count: signers.length,
     }),
-    fields: tr(fields.length === 1 ? "{count} field" : "{count} fields", {
-      count: fields.length,
-    }),
+    fields:
+      fields.length === 1
+        ? tr("1 field placed")
+        : tr("{length} fields placed", { length: fields.length }),
   });
 }
 
@@ -1495,7 +1496,7 @@ function buildDashboardStatusLabel(
   signers: readonly PersistedSignerRecord[],
 ): string {
   if (isEnvelopeExpired(envelope, Math.floor(Date.now() / 1000))) {
-    return "Expired";
+    return tr("Expired");
   }
 
   // With one signer "Sent" says it all. With several, say how many are done.
@@ -1504,10 +1505,13 @@ function buildDashboardStatusLabel(
       (signer) => signer.status === "signed",
     ).length;
 
-    return `${String(signedCount)} of ${String(signers.length)} signed`;
+    return tr("{signed} of {total} signed", {
+      signed: signedCount,
+      total: signers.length,
+    });
   }
 
-  return dashboardStatusLabels[envelope.status];
+  return tr(dashboardStatusLabels[envelope.status]);
 }
 
 function buildFieldsBySigner(
