@@ -63,7 +63,7 @@ export const PT_BR_MISC: Readonly<Record<string, string>> = {
   "This file is unchanged. It is the audit certificate this site produced for “{title}”.":
     "Este arquivo não foi alterado. É o certificado de auditoria que este site gerou para “{title}”.",
   "The envelope was {status}": "O envelope foi {status}",
-  " on {date} UTC": " em {date} UTC",
+  " on {date} UTC": " em {date} (horário de Brasília)",
   "with 1 signer.": "com 1 signatário.",
   "with {count} signers.": "com {count} signatários.",
   "Envelope ID {id}.": "ID do envelope: {id}.",
