@@ -285,7 +285,7 @@ export function TwoFactorPanel({
             {tr("Two-step sign-in")}
           </h2>
           <span className={`pill ${enabled ? "pill-success" : "pill-neutral"}`}>
-            {enabled ? "On" : "Off"}
+            {enabled ? tr("On") : tr("Off")}
           </span>
         </div>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">

@@ -305,4 +305,57 @@ export const PT_BR_ENVELOPES: Readonly<Record<string, string>> = {
   "{name} will be notified immediately.": "{name} será avisado(a) na hora.",
   "← Back": "← Voltar",
   "← Documents": "← Documentos",
+  On: "Ligado",
+  "Copied from an earlier envelope": "Copiado de um envelope anterior",
+  "Envelope created": "Envelope criado",
+  "Sent to {targetLabel}": "Enviado para {targetLabel}",
+  "Viewed by {targetLabel}": "Visto por {targetLabel}",
+  "Signed by {targetLabel} ({value}, password given again)":
+    "Assinado por {targetLabel} ({value}, senha informada de novo)",
+  "Signed by {targetLabel} {value}": "Assinado por {targetLabel} {value}",
+  "Signed by {targetLabel}": "Assinado por {targetLabel}",
+  "Declined by {targetLabel} — {declineReason}":
+    "Recusado por {targetLabel} — {declineReason}",
+  "Declined by {targetLabel}": "Recusado por {targetLabel}",
+  "Manual reminder sent to {targetLabel}":
+    "Lembrete enviado para {targetLabel}",
+  "Automatic reminder sent to {targetLabel}":
+    "Lembrete automático enviado para {targetLabel}",
+  "{targetLabel} agreed to use electronic records and signatures":
+    "{targetLabel} aceitou usar documentos e assinatura eletrônicos",
+  "{targetLabel} confirmed their identity":
+    "{targetLabel} confirmou a identidade",
+  "Wrong identity code entered for {targetLabel}":
+    "Código de identidade errado informado para {targetLabel}",
+  "Email accepted for delivery to {recipient}":
+    "E-mail aceito para entrega a {recipient}",
+  "Email accepted for delivery": "E-mail aceito para entrega",
+  "Final signed PDF and certificate generated":
+    "PDF assinado final e certificado gerados",
+  "Envelope voided by sender — {declineReason}":
+    "Envelope cancelado pelo remetente — {declineReason}",
+  "Envelope voided by sender": "Envelope cancelado pelo remetente",
+  "Wrong password given while signing for {targetLabel}":
+    "Senha errada informada ao assinar por {targetLabel}",
+  "Deadline set to {expiresAt}": "Prazo definido para {expiresAt}",
+  "Deadline changed": "Prazo alterado",
+  "Deadline passed before everyone signed":
+    "O prazo venceu antes de todos assinarem",
+  "Signed {signedAt}": "Assinado em {signedAt}",
+  "Declined {declinedAt}": "Recusado em {declinedAt}",
+  "Notified {sentAt}": "Avisado em {sentAt}",
+  "Notified before void": "Avisado antes do cancelamento",
+  "Sent {sentAt}": "Enviado em {sentAt}",
+  "Ready to notify after {previousSignerName}":
+    "Será avisado depois de {previousSignerName}",
+  "Ready to notify after send": "Será avisado após o envio",
+  "No notification sent": "Nenhum aviso enviado",
+  "Last notified signer before void": "Último avisado antes do cancelamento",
+  "Decline reason: {declineReason}": "Motivo da recusa: {declineReason}",
+  "Skipped after decline": "Pulado após a recusa",
+  "Not reached before void": "Não chegou a vez antes do cancelamento",
+  "1 field completed": "1 campo preenchido",
+  "{count} fields completed": "{count} campos preenchidos",
+  "1 field assigned": "1 campo atribuído",
+  "{count} fields assigned": "{count} campos atribuídos",
 };

@@ -68,7 +68,7 @@ export function Part11Panel({ initialEnabled }: { initialEnabled: boolean }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <span className={`pill ${enabled ? "pill-success" : "pill-neutral"}`}>
-          {enabled ? "On" : "Off"}
+          {enabled ? tr("On") : tr("Off")}
         </span>
         <button
           className={enabled ? "btn-quiet btn-quiet-danger" : "btn-quiet"}

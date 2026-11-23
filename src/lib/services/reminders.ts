@@ -1,4 +1,5 @@
 import { MANUAL_NUDGE_COOLDOWN_SECONDS } from "../types/domain.ts";
+import { intlLocale, tr } from "../petsky/locale.ts";
 
 export function getManualNudgeAvailableAt(lastNudgedAt: number): number {
   return lastNudgedAt + MANUAL_NUDGE_COOLDOWN_SECONDS;
@@ -15,7 +16,7 @@ export function isManualNudgeAvailable(
   return getManualNudgeAvailableAt(lastNudgedAt) <= nowUnixTimestamp;
 }
 
-const reminderAvailabilityFormatter = new Intl.DateTimeFormat("en-US", {
+const reminderAvailabilityFormatter = new Intl.DateTimeFormat(intlLocale(), {
   day: "numeric",
   hour: "numeric",
   minute: "2-digit",
@@ -27,16 +28,16 @@ const SECONDS_PER_DAY = 24 * 60 * 60;
 /** "Off", "Every day", "Every 3 days", "Every week". */
 export function formatReminderInterval(intervalDays: number | null): string {
   if (intervalDays === null) {
-    return "Off";
+    return tr("Off");
   }
 
   if (intervalDays === 1) {
-    return "Every day";
+    return tr("Every day");
   }
 
   return intervalDays === 7
-    ? "Every week"
-    : `Every ${String(intervalDays)} days`;
+    ? tr("Every week")
+    : tr("Every {count} days", { count: intervalDays });
 }
 
 /**
