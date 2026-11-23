@@ -358,4 +358,20 @@ export const PT_BR_ENVELOPES: Readonly<Record<string, string>> = {
   "{count} fields completed": "{count} campos preenchidos",
   "1 field assigned": "1 campo atribuído",
   "{count} fields assigned": "{count} campos atribuídos",
+  "Sent to: {sentTo}": "Enviado para: {sentTo}",
+  "Sent to: —": "Enviado para: —",
+  "Expired {date} · was waiting on: {who}":
+    "Venceu em {date} · aguardava: {who}",
+  "Waiting on: {who}": "Aguardando: {who}",
+  "Declined by: {who}": "Recusado por: {who}",
+  "Voided on {date}": "Cancelado em {date}",
+  "{signers} · {fields} placed": "{signers} · {fields} posicionados",
+  "{count} field": "{count} campo",
+  "{count} fields": "{count} campos",
+  Fields: "Campos",
+  Inspector: "Propriedades",
+  "1 field placed": "1 campo posicionado",
+  "{length} fields placed": "{length} campos posicionados",
+  "Click the page to place {field} for {name}.":
+    "Clique na página para posicionar {field} para {name}.",
 };

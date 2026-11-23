@@ -44,11 +44,11 @@ const documentsDescription = tr(
 );
 
 const statusLabelMap: Record<EnvelopeStatus, string> = {
-  completed: "Completed",
-  declined: "Declined",
-  draft: "Draft",
-  sent: "Sent",
-  voided: "Voided",
+  completed: tr("Completed"),
+  declined: tr("Declined"),
+  draft: tr("Draft"),
+  sent: tr("Sent"),
+  voided: tr("Voided"),
 };
 
 const statusPillClasses: Record<EnvelopeStatus, string> = {
