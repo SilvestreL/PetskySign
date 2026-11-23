@@ -15,14 +15,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { TemplateListItem } from "@/lib/templates";
+import { tr } from "@/lib/petsky/locale";
 
 type TemplatesShellProps = {
   initialState?: "error";
   templates?: readonly TemplateListItem[];
 };
 
-const pageDescription =
-  "Documents you send often, with their fields and signing order already in place.";
+const pageDescription = tr(
+  "Documents you send often, with their fields and signing order already in place.",
+);
 
 export function TemplatesShell({
   initialState,
@@ -54,14 +56,14 @@ export function TemplatesShell({
           error?: string;
         } | null;
 
-        setDeleteError(payload?.error ?? "Unable to delete this template.");
+        setDeleteError(payload?.error ?? tr("Unable to delete this template."));
         return;
       }
 
       setPendingDelete(null);
       router.refresh();
     } catch {
-      setDeleteError("Unable to delete this template.");
+      setDeleteError(tr("Unable to delete this template."));
     } finally {
       setIsDeleting(false);
     }
@@ -70,11 +72,13 @@ export function TemplatesShell({
   if (initialState === "error") {
     return (
       <div className="space-y-5">
-        <PageHeader description={pageDescription} title="Templates" />
+        <PageHeader description={pageDescription} title={tr("Templates")} />
         <StatusPanel
           action={{ href: "/templates", label: "Retry" }}
-          description="We couldn't load your templates. Try again in a moment."
-          title="Couldn't load templates"
+          description={tr(
+            "We couldn't load your templates. Try again in a moment.",
+          )}
+          title={tr("Couldn't load templates")}
           tone="error"
         />
       </div>
@@ -83,7 +87,7 @@ export function TemplatesShell({
 
   return (
     <div className="space-y-5">
-      <PageHeader description={pageDescription} title="Templates" />
+      <PageHeader description={pageDescription} title={tr("Templates")} />
 
       {templates.length === 0 ? (
         <section
@@ -97,14 +101,15 @@ export function TemplatesShell({
             </span>
             <div className="space-y-2">
               <h2 className="text-2xl font-extrabold tracking-[-0.03em] text-(--fg)">
-                No templates yet
+                {tr("No templates yet")}
               </h2>
               <p className="text-[0.9375rem] leading-6 text-(--secondary)">
-                Open any document you have prepared or sent and choose Save as
-                template. Next time, you only name the people who sign.
+                {tr(
+                  "Open any document you have prepared or sent and choose Save as template. Next time, you only name the people who sign.",
+                )}
               </p>
             </div>
-            <ShellButton href="/dashboard">Go to documents</ShellButton>
+            <ShellButton href="/dashboard">{tr("Go to documents")}</ShellButton>
           </div>
         </section>
       ) : (
@@ -124,11 +129,13 @@ export function TemplatesShell({
                     {template.name}
                   </h2>
                   <p className="text-sm leading-6 text-(--secondary)">
-                    {template.pageCountLabel} · {template.fieldCountLabel} ·
-                    Saved {template.createdAtLabel}
+                    {template.pageCountLabel} · {template.fieldCountLabel}{" "}
+                    {tr("· Saved")} {template.createdAtLabel}
                   </p>
                   <ul
-                    aria-label={`Signers in ${template.name}`}
+                    aria-label={tr("Signers in {name}", {
+                      name: template.name,
+                    })}
                     className="flex flex-wrap gap-2"
                   >
                     {template.roleNames.map((roleName, index) => (
@@ -143,7 +150,9 @@ export function TemplatesShell({
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <button
-                    aria-label={`Delete the template ${template.name}`}
+                    aria-label={tr("Delete the template {name}", {
+                      name: template.name,
+                    })}
                     className="btn-quiet btn-quiet-danger min-h-11 px-4"
                     onClick={() => {
                       setDeleteError(null);
@@ -151,13 +160,13 @@ export function TemplatesShell({
                     }}
                     type="button"
                   >
-                    Delete
+                    {tr("Delete")}
                   </button>
                   <ShellButton
                     className="min-h-11"
                     href={`/templates/${template.id}/use`}
                   >
-                    Use template
+                    {tr("Use template")}
                   </ShellButton>
                 </div>
               </li>
@@ -178,14 +187,19 @@ export function TemplatesShell({
           <DialogContent className="max-w-md sm:p-8" showCloseButton={false}>
             <div className="space-y-4">
               <DialogHeader className="space-y-3">
-                <DialogTitle>Delete this template?</DialogTitle>
+                <DialogTitle>{tr("Delete this template?")}</DialogTitle>
                 <DialogDescription asChild>
                   <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                     <p>
-                      &ldquo;{pendingDelete.name}&rdquo; will be removed for
-                      good.
+                      &ldquo;
+                      {pendingDelete.name}
+                      &rdquo;{tr(" will be removed for good.")}
                     </p>
-                    <p>Documents you already made from it are not affected.</p>
+                    <p>
+                      {tr(
+                        "Documents you already made from it are not affected.",
+                      )}
+                    </p>
                   </div>
                 </DialogDescription>
               </DialogHeader>
@@ -202,14 +216,14 @@ export function TemplatesShell({
                   onClick={() => setPendingDelete(null)}
                   variant="secondary"
                 >
-                  Cancel
+                  {tr("Cancel")}
                 </ShellButton>
                 <ShellButton
                   loading={isDeleting}
                   onClick={handleConfirmDelete}
                   variant="danger"
                 >
-                  {isDeleting ? "Deleting..." : "Delete template"}
+                  {isDeleting ? tr("Deleting...") : tr("Delete template")}
                 </ShellButton>
               </div>
             </div>

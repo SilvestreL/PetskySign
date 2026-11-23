@@ -3,13 +3,10 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
 import { FieldShell, ShellButton } from "@/components/shared/form-shell";
-import {
-  Field,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { contactFormSchema } from "@/lib/schemas/contact";
+import { tr } from "@/lib/petsky/locale";
 
 type ContactFormValues = {
   company: string;
@@ -39,7 +36,7 @@ function readApiErrorMessage(payload: ContactApiPayload): string {
     return payload.error;
   }
 
-  return "Something went wrong. Please try again.";
+  return tr("Something went wrong. Please try again.");
 }
 
 export function ContactForm() {
@@ -93,18 +90,18 @@ export function ContactForm() {
         const field = issue.path[0];
 
         if (field === "name") {
-          nextErrors.name = "Enter your name";
+          nextErrors.name = tr("Enter your name");
         }
 
         if (field === "email") {
-          nextErrors.email = "Enter a valid email address";
+          nextErrors.email = tr("Enter a valid email address");
         }
 
         if (field === "message") {
           nextErrors.message =
             issue.code === "too_big"
-              ? "Message must be 5000 characters or fewer"
-              : "Enter a message";
+              ? tr("Message must be 5000 characters or fewer")
+              : tr("Enter a message");
         }
       }
 
@@ -155,10 +152,13 @@ export function ContactForm() {
       setValues(defaultValues);
       setErrors({});
       setSuccessMessage(
-        `Your message was sent. We’ll follow up at ${validationResult.data.email} if we need more detail.`,
+        tr(
+          "Your message was sent. We’ll follow up at {email} if we need more detail.",
+          { email: validationResult.data.email },
+        ),
       );
     } catch {
-      setSubmitError("Something went wrong. Please try again.");
+      setSubmitError(tr("Something went wrong. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -171,7 +171,7 @@ export function ContactForm() {
           aria-hidden="true"
           className="pointer-events-none absolute -left-[10000px] top-auto h-px w-px overflow-hidden"
         >
-          <label htmlFor="company">Company</label>
+          <label htmlFor="company">{tr("Company")}</label>
           <input
             autoComplete="off"
             id="company"
@@ -183,15 +183,11 @@ export function ContactForm() {
         </div>
 
         {successMessage ? (
-          <div className="notice notice-success">
-            {successMessage}
-          </div>
+          <div className="notice notice-success">{successMessage}</div>
         ) : null}
 
         {submitError ? (
-          <div className="notice notice-danger">
-            {submitError}
-          </div>
+          <div className="notice notice-danger">{submitError}</div>
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -199,10 +195,10 @@ export function ContactForm() {
             autoComplete="name"
             disabled={isSubmitting}
             error={errors.name}
-            label="Name"
+            label={tr("Name")}
             name="contact-name"
             onChange={handleChange("name")}
-            placeholder="Your name"
+            placeholder={tr("Your name")}
             readOnly={false}
             value={values.name}
           />
@@ -210,10 +206,10 @@ export function ContactForm() {
             autoComplete="email"
             disabled={isSubmitting}
             error={errors.email}
-            label="Email"
+            label={tr("Email")}
             name="contact-email"
             onChange={handleChange("email")}
-            placeholder="you@example.com"
+            placeholder={tr("you@example.com")}
             readOnly={false}
             type="email"
             value={values.email}
@@ -225,7 +221,7 @@ export function ContactForm() {
             className="text-[0.8125rem] font-semibold text-(--secondary)"
             htmlFor="contact-message"
           >
-            Message
+            {tr("Message")}
           </FieldLabel>
           <Textarea
             aria-describedby="contact-message-description"
@@ -235,7 +231,9 @@ export function ContactForm() {
             id="contact-message"
             name="contact-message"
             onChange={handleChange("message")}
-            placeholder="Tell us what you need, and include any account email, sender name, document title, or link that helps us identify the request."
+            placeholder={tr(
+              "Tell us what you need, and include any account email, sender name, document title, or link that helps us identify the request.",
+            )}
             value={values.message}
           />
           {errors.message ? (
@@ -250,7 +248,7 @@ export function ContactForm() {
 
         <div className="flex pt-1 sm:justify-end">
           <ShellButton loading={isSubmitting} type="submit">
-            {isSubmitting ? "Sending..." : "Send message"}
+            {isSubmitting ? tr("Sending...") : tr("Send message")}
           </ShellButton>
         </div>
       </form>

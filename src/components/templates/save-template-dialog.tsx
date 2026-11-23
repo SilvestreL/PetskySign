@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MAX_TEMPLATE_ROLE_NAME_LENGTH } from "@/lib/schemas/template";
+import { tr } from "@/lib/petsky/locale";
 
 type SaveTemplateDialogProps = {
   envelopeId: string;
@@ -22,7 +23,7 @@ type SaveTemplateDialogProps = {
   signers: readonly { id: string; name: string }[];
 };
 
-const genericError = "Something went wrong. Please try again.";
+const genericError = tr("Something went wrong. Please try again.");
 
 /**
  * Asks what to call the template and each place in its signing order, then
@@ -38,7 +39,9 @@ export function SaveTemplateDialog({
   const formId = useId();
   const [name, setName] = useState(initialName);
   const [roleNames, setRoleNames] = useState(() =>
-    signers.map((_, index) => `Signer ${String(index + 1)}`),
+    signers.map((_, index) =>
+      tr("Signer {value}", { value: String(index + 1) }),
+    ),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -98,13 +101,13 @@ export function SaveTemplateDialog({
       <DialogContent className="max-w-lg sm:p-8" showCloseButton={false}>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <DialogHeader className="space-y-3">
-            <DialogTitle>Save as a template</DialogTitle>
+            <DialogTitle>{tr("Save as a template")}</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                 <p>
-                  A template keeps this document, where its fields are and the
-                  order people sign in. It does not keep anyone&apos;s name or
-                  email address, or anything that was filled in.
+                  {tr(
+                    "A template keeps this document, where its fields are and the order people sign in. It does not keep anyone's name or email address, or anything that was filled in.",
+                  )}
                 </p>
               </div>
             </DialogDescription>
@@ -112,7 +115,7 @@ export function SaveTemplateDialog({
 
           <label className="grid gap-1.5" htmlFor={`${formId}-name`}>
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Template name
+              {tr("Template name")}
             </span>
             <input
               autoFocus
@@ -131,11 +134,12 @@ export function SaveTemplateDialog({
 
           <fieldset className="grid gap-3">
             <legend className="text-[0.9375rem] font-extrabold text-(--fg)">
-              Who signs
+              {tr("Who signs")}
             </legend>
             <p className="text-[0.8125rem] leading-5 text-(--secondary)">
-              Name each place in the signing order, such as Client or Landlord.
-              You say who that is each time you use the template.
+              {tr(
+                "Name each place in the signing order, such as Client or Landlord. You say who that is each time you use the template.",
+              )}
             </p>
             {signers.map((signer, index) => (
               <label
@@ -144,7 +148,8 @@ export function SaveTemplateDialog({
                 key={signer.id}
               >
                 <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                  Signer {index + 1}, here {signer.name}
+                  {tr("Signer")} {index + 1}
+                  {tr(", here")} {signer.name}
                 </span>
                 <input
                   className="field-input"
@@ -166,7 +171,7 @@ export function SaveTemplateDialog({
             ))}
             {hasRepeatedRoleName ? (
               <p className="text-xs font-semibold text-(--danger)" role="alert">
-                Give each signer a different name.
+                {tr("Give each signer a different name.")}
               </p>
             ) : null}
           </fieldset>
@@ -183,10 +188,10 @@ export function SaveTemplateDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton disabled={!canSave} loading={isSaving} type="submit">
-              {isSaving ? "Saving..." : "Save template"}
+              {isSaving ? tr("Saving...") : tr("Save template")}
             </ShellButton>
           </div>
         </form>

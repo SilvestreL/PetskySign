@@ -1,6 +1,11 @@
+import { tr } from "@/lib/petsky/locale";
+
 export default function CanvasLoading() {
   return (
-    <div className="grid min-h-[calc(100vh-73px)] lg:grid-cols-[272px_minmax(0,1fr)]">
+    <div
+      aria-label={tr("Loading document")}
+      className="grid min-h-[calc(100vh-73px)] lg:grid-cols-[272px_minmax(0,1fr)]"
+    >
       <aside className="hidden py-5 pl-5 lg:block">
         <div className="panel space-y-2 rounded-[1.25rem] p-4">
           <div className="h-4 w-20 animate-pulse rounded-full bg-[#eeeff4]" />

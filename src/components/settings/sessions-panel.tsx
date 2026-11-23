@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ShellButton } from "@/components/shared/form-shell";
+import { tr } from "@/lib/petsky/locale";
 
 // Ends every session this account has, on every device, this one included.
 export function SessionsPanel() {
@@ -21,13 +22,13 @@ export function SessionsPanel() {
       });
 
       if (!response.ok) {
-        setError("Something went wrong. Please try again.");
+        setError(tr("Something went wrong. Please try again."));
         return;
       }
 
       window.location.assign("/login");
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(tr("Something went wrong. Please try again."));
     } finally {
       setIsBusy(false);
     }
@@ -37,12 +38,12 @@ export function SessionsPanel() {
     <div className="panel p-6 sm:p-8">
       <div className="space-y-5">
         <h2 className="text-xl font-extrabold tracking-[-0.02em] text-(--fg)">
-          Signed-in devices
+          {tr("Signed-in devices")}
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          If you signed in on a computer that is not yours, or lost a device,
-          sign out everywhere. Every browser signed in to your account,
-          including this one, has to sign in again.
+          {tr(
+            "If you signed in on a computer that is not yours, or lost a device, sign out everywhere. Every browser signed in to your account, including this one, has to sign in again.",
+          )}
         </p>
         {error ? (
           <p className="notice notice-danger" role="alert">
@@ -55,7 +56,7 @@ export function SessionsPanel() {
           onClick={() => void signOutEverywhere()}
           variant="secondary"
         >
-          {isBusy ? "Signing out..." : "Sign out everywhere"}
+          {isBusy ? tr("Signing out...") : tr("Sign out everywhere")}
         </ShellButton>
       </div>
     </div>

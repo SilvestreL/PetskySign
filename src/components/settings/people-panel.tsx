@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { PeopleList, Person, PersonRole } from "@/lib/people";
+import { tr } from "@/lib/petsky/locale";
 
 // Who has an account on this install, and which of them are administrators.
 // Administrators only.
@@ -11,7 +12,7 @@ import type { PeopleList, Person, PersonRole } from "@/lib/people";
 // is the server's job: what is typed is sent along, and the list on screen
 // is the answer to it.
 
-const GENERIC_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const GENERIC_ERROR_MESSAGE = tr("Something went wrong. Please try again.");
 /** How long typing has to pause before the list is asked for again. */
 const SEARCH_DELAY_MS = 250;
 /** With fewer accounts than this, nobody needs to search. */
@@ -253,15 +254,12 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
     <div className="space-y-5 border-t border-(--border) pt-8">
       <div className="space-y-2">
         <h3 className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-          People
+          {tr("People")}
         </h3>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Everyone with an account here. Administrators can change these
-          settings, answer signer data requests and receive the finished
-          documents of accounts that are closed. When someone stops being an
-          administrator, the documents they received that way move to an
-          administrator who stays. Keep at least two, so that one person leaving
-          does not lock everyone out.
+          {tr(
+            "Everyone with an account here. Administrators can change these settings, answer signer data requests and receive the finished documents of accounts that are closed. When someone stops being an administrator, the documents they received that way move to an administrator who stays. Keep at least two, so that one person leaving does not lock everyone out.",
+          )}
         </p>
       </div>
 
@@ -272,18 +270,18 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
       ) : null}
 
       {people === null && !error ? (
-        <p className="text-sm text-(--secondary)">Loading people...</p>
+        <p className="text-sm text-(--secondary)">{tr("Loading people...")}</p>
       ) : null}
 
       {canSearch ? (
         <label className="grid max-w-sm gap-1.5">
           <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-            Find a person
+            {tr("Find a person")}
           </span>
           <input
             className="field-input"
             onChange={(event) => setFilter(event.target.value)}
-            placeholder="Name or email"
+            placeholder={tr("Name or email")}
             type="search"
             value={filter}
           />
@@ -291,7 +289,7 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
       ) : null}
 
       {people ? (
-        <ul aria-label="People" className="space-y-3">
+        <ul aria-label={tr("People")} className="space-y-3">
           {people.map((person) => {
             const isAdmin = person.role === "admin";
             const isYou = person.id === you;
@@ -316,15 +314,15 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                       {isAdmin ? "Administrator" : "Member"}
                     </span>
                     {isYou ? (
-                      <span className="pill pill-neutral">You</span>
+                      <span className="pill pill-neutral">{tr("You")}</span>
                     ) : null}
                     {!person.emailVerified ? (
                       <span className="pill pill-warning">
-                        Email not confirmed
+                        {tr("Email not confirmed")}
                       </span>
                     ) : null}
                     {person.closing ? (
-                      <span className="pill pill-warning">Closing</span>
+                      <span className="pill pill-warning">{tr("Closing")}</span>
                     ) : null}
                     {showsPart11(person) ? (
                       person.identityVerifiedAt !== null ? (
@@ -332,19 +330,23 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                           className="pill pill-success"
                           title={person.identityVerificationNote ?? undefined}
                         >
-                          Identity confirmed
+                          {tr("Identity confirmed")}
                         </span>
                       ) : (
                         <span className="pill pill-neutral">
-                          Identity not confirmed
+                          {tr("Identity not confirmed")}
                         </span>
                       )
                     ) : null}
                     {person.signingLockedAt !== null ? (
-                      <span className="pill pill-danger">Signing locked</span>
+                      <span className="pill pill-danger">
+                        {tr("Signing locked")}
+                      </span>
                     ) : null}
                     {person.twoFactorEnabled ? (
-                      <span className="pill pill-success">Two-step on</span>
+                      <span className="pill pill-success">
+                        {tr("Two-step on")}
+                      </span>
                     ) : null}
                   </div>
                   {person.twoFactorEnabled && !isYou ? (
@@ -352,8 +354,9 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                       {resettingId === person.id ? (
                         <>
                           <span className="text-sm text-(--secondary)">
-                            Turn off their two-step sign-in and sign them out
-                            everywhere?
+                            {tr(
+                              "Turn off their two-step sign-in and sign them out everywhere?",
+                            )}
                           </span>
                           <button
                             className="btn-quiet btn-quiet-danger"
@@ -361,7 +364,9 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                             onClick={() => void resetTwoFactorFor(person)}
                             type="button"
                           >
-                            {pendingId === person.id ? "Resetting..." : "Reset"}
+                            {pendingId === person.id
+                              ? tr("Resetting...")
+                              : "Reset"}
                           </button>
                           <button
                             className="btn-quiet"
@@ -369,19 +374,23 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                             onClick={() => setResettingId(null)}
                             type="button"
                           >
-                            Cancel
+                            {tr("Cancel")}
                           </button>
                         </>
                       ) : (
                         <button
-                          aria-label={`Reset two-step sign-in for ${person.name}`}
+                          aria-label={tr("Reset two-step sign-in for {name}", {
+                            name: person.name,
+                          })}
                           className="btn-quiet"
                           disabled={pendingId !== null}
                           onClick={() => setResettingId(person.id)}
-                          title="For someone who lost their phone and their backup codes."
+                          title={tr(
+                            "For someone who lost their phone and their backup codes.",
+                          )}
                           type="button"
                         >
-                          Reset two-step sign-in
+                          {tr("Reset two-step sign-in")}
                         </button>
                       )}
                     </div>
@@ -394,7 +403,9 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                       {person.identityVerifiedAt === null ? (
                         part11Mode || person.hasOpenPart11Signing ? (
                           <button
-                            aria-label={`Confirm ${person.name}'s identity`}
+                            aria-label={tr("Confirm {name}'s identity", {
+                              name: person.name,
+                            })}
                             className="btn-quiet"
                             disabled={
                               pendingId !== null ||
@@ -407,29 +418,34 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                             }}
                             type="button"
                           >
-                            Confirm identity
+                            {tr("Confirm identity")}
                           </button>
                         ) : null
                       ) : (
                         <button
-                          aria-label={`Take back ${person.name}'s identity confirmation`}
+                          aria-label={tr(
+                            "Take back {name}'s identity confirmation",
+                            { name: person.name },
+                          )}
                           className="btn-quiet btn-quiet-danger"
                           disabled={pendingId !== null}
                           onClick={() => void changePart11(person, "revoke")}
                           type="button"
                         >
-                          Take back confirmation
+                          {tr("Take back confirmation")}
                         </button>
                       )}
                       {person.signingLockedAt !== null ? (
                         <button
-                          aria-label={`Unlock signing for ${person.name}`}
+                          aria-label={tr("Unlock signing for {name}", {
+                            name: person.name,
+                          })}
                           className="btn-quiet"
                           disabled={pendingId !== null}
                           onClick={() => void changePart11(person, "unlock")}
                           type="button"
                         >
-                          Unlock signing
+                          {tr("Unlock signing")}
                         </button>
                       ) : null}
                     </div>
@@ -438,7 +454,7 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                     <div className="grid max-w-md gap-2 pt-2">
                       <label className="grid gap-1.5">
                         <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                          How did you check who this is?
+                          {tr("How did you check who this is?")}
                         </span>
                         <input
                           className="field-input"
@@ -446,7 +462,9 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                           onChange={(event) =>
                             setVerificationNote(event.target.value)
                           }
-                          placeholder="For example: passport seen in person, HR record 4417"
+                          placeholder={tr(
+                            "For example: passport seen in person, HR record 4417",
+                          )}
                           value={verificationNote}
                         />
                       </label>
@@ -460,7 +478,7 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                           onClick={() => void changePart11(person, "verify")}
                           type="button"
                         >
-                          {pendingId === person.id ? "Saving..." : "Save"}
+                          {pendingId === person.id ? tr("Saving...") : "Save"}
                         </button>
                         <button
                           className="btn-quiet"
@@ -468,7 +486,7 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                           onClick={() => setVerifyingId(null)}
                           type="button"
                         >
-                          Cancel
+                          {tr("Cancel")}
                         </button>
                       </div>
                     </div>
@@ -477,24 +495,28 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
 
                 {isAdmin ? (
                   <button
-                    aria-label={`Remove ${person.name} as administrator`}
+                    aria-label={tr("Remove {name} as administrator", {
+                      name: person.name,
+                    })}
                     className="btn-quiet btn-quiet-danger shrink-0"
                     disabled={pendingId !== null || isLastAdmin}
                     onClick={() => void changeRole(person, "user")}
                     title={
                       isLastAdmin
-                        ? "There has to be at least one administrator."
+                        ? tr("There has to be at least one administrator.")
                         : undefined
                     }
                     type="button"
                   >
                     {pendingId === person.id
-                      ? "Saving..."
-                      : "Remove as administrator"}
+                      ? tr("Saving...")
+                      : tr("Remove as administrator")}
                   </button>
                 ) : (
                   <button
-                    aria-label={`Make ${person.name} an administrator`}
+                    aria-label={tr("Make {name} an administrator", {
+                      name: person.name,
+                    })}
                     className="btn-quiet shrink-0"
                     disabled={
                       pendingId !== null ||
@@ -505,8 +527,8 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
                     type="button"
                   >
                     {pendingId === person.id
-                      ? "Saving..."
-                      : "Make administrator"}
+                      ? tr("Saving...")
+                      : tr("Make administrator")}
                   </button>
                 )}
               </li>
@@ -516,13 +538,17 @@ export function PeoplePanel({ part11Mode = false }: { part11Mode?: boolean }) {
       ) : null}
 
       {people && people.length === 0 ? (
-        <p className="text-sm text-(--secondary)">Nobody matches that.</p>
+        <p className="text-sm text-(--secondary)">
+          {tr("Nobody matches that.")}
+        </p>
       ) : null}
 
       {list && list.total > list.people.length ? (
         <p className="text-sm text-(--secondary)">
-          Showing the first {list.people.length} of {list.total}. Type part of a
-          name or an email address above to find the others.
+          {tr("Showing the first")} {list.people.length} {tr("of")} {list.total}
+          {tr(
+            ". Type part of a name or an email address above to find the others.",
+          )}
         </p>
       ) : null}
     </div>

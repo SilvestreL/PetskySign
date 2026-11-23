@@ -235,7 +235,7 @@ export function PdfPageCanvas({
 
   return (
     <div
-      aria-label={`Rendered PDF page ${pageNumber}`}
+      aria-label={tr("Rendered PDF page {page}", { page: pageNumber })}
       className="absolute inset-0 flex items-center justify-center"
       role="img"
     >

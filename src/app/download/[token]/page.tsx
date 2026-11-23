@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 
 import { PublicDocumentShell } from "@/components/layout/public-document-shell";
 import { RenewDownloadButton } from "@/components/downloads/renew-download-button";
+import { tr } from "@/lib/petsky/locale";
 
 export const metadata: Metadata = {
   robots: { follow: false, index: false },
-  title: "Download link expired",
+  title: tr("Download link expired"),
 };
 
 type ExpiredDownloadPageProps = {
@@ -19,8 +20,10 @@ export default async function ExpiredDownloadPage({
 
   return (
     <PublicDocumentShell
-      description="Download links work for a limited time. You can have new ones sent to the email address this document was sent to."
-      title="This download link has expired"
+      description={tr(
+        "Download links work for a limited time. You can have new ones sent to the email address this document was sent to.",
+      )}
+      title={tr("This download link has expired")}
     >
       <div className="mx-auto w-full max-w-[52rem]">
         <RenewDownloadButton token={token} />

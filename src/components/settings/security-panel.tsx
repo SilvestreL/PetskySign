@@ -7,10 +7,11 @@ import {
   SESSION_IDLE_CHOICES,
   SESSION_MAX_HOURS_CHOICES,
 } from "@/lib/session-choices";
+import { tr } from "@/lib/petsky/locale";
 
 // Sign-in security and the install's own audit trail. Administrators only.
 
-const GENERIC_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const GENERIC_ERROR_MESSAGE = tr("Something went wrong. Please try again.");
 
 type AuditResponse = {
   chain?:
@@ -21,40 +22,40 @@ type AuditResponse = {
 } | null;
 
 const EVENT_LABELS: Record<SystemAuditEvent["event"], string> = {
-  account_closure_requested: "Account closure requested",
-  account_deleted: "Account deleted",
-  email_domain_changed: "Email domain changed",
-  documents_erased: "Documents erased (API)",
-  identity_verification_revoked: "Identity confirmation taken back",
-  identity_verified: "Identity confirmed",
-  logo_changed: "Logo changed",
-  part11_mode_changed: "Part 11 mode changed",
-  password_changed: "Password changed",
-  password_reset: "Password reset by email link",
-  reauthentication_failed: "Wrong password while signing",
-  role_changed: "Role changed",
-  settings_changed: "Settings changed",
-  sign_in_failed: "Sign-in failed",
-  sign_in_locked: "Sign-in stopped after wrong passwords",
-  sign_in_succeeded: "Signed in",
-  sessions_revoked: "Signed out everywhere",
-  signed_out: "Signed out",
-  signing_locked: "Signing locked",
-  signing_unlocked: "Signing unlocked",
-  two_factor_backup_codes_regenerated: "New backup codes made",
-  two_factor_disabled: "Two-step sign-in turned off",
-  two_factor_enabled: "Two-step sign-in turned on",
-  two_factor_requirement_changed: "Two-step sign-in requirement changed",
-  two_factor_reset: "Two-step sign-in reset by an administrator",
+  account_closure_requested: tr("Account closure requested"),
+  account_deleted: tr("Account deleted"),
+  email_domain_changed: tr("Email domain changed"),
+  documents_erased: tr("Documents erased (API)"),
+  identity_verification_revoked: tr("Identity confirmation taken back"),
+  identity_verified: tr("Identity confirmed"),
+  logo_changed: tr("Logo changed"),
+  part11_mode_changed: tr("Part 11 mode changed"),
+  password_changed: tr("Password changed"),
+  password_reset: tr("Password reset by email link"),
+  reauthentication_failed: tr("Wrong password while signing"),
+  role_changed: tr("Role changed"),
+  settings_changed: tr("Settings changed"),
+  sign_in_failed: tr("Sign-in failed"),
+  sign_in_locked: tr("Sign-in stopped after wrong passwords"),
+  sign_in_succeeded: tr("Signed in"),
+  sessions_revoked: tr("Signed out everywhere"),
+  signed_out: tr("Signed out"),
+  signing_locked: tr("Signing locked"),
+  signing_unlocked: tr("Signing unlocked"),
+  two_factor_backup_codes_regenerated: tr("New backup codes made"),
+  two_factor_disabled: tr("Two-step sign-in turned off"),
+  two_factor_enabled: tr("Two-step sign-in turned on"),
+  two_factor_requirement_changed: tr("Two-step sign-in requirement changed"),
+  two_factor_reset: tr("Two-step sign-in reset by an administrator"),
 };
 
 const SIGN_IN_FAILURE_REASONS: Record<string, string> = {
-  ACCOUNT_TEMPORARILY_LOCKED: "second step locked after wrong codes",
-  EMAIL_NOT_VERIFIED: "email address not confirmed yet",
-  INVALID_BACKUP_CODE: "wrong backup code",
-  INVALID_CODE: "wrong authenticator code",
-  INVALID_EMAIL_OR_PASSWORD: "wrong email or password",
-  TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: "too many wrong codes, signed out",
+  ACCOUNT_TEMPORARILY_LOCKED: tr("second step locked after wrong codes"),
+  EMAIL_NOT_VERIFIED: tr("email address not confirmed yet"),
+  INVALID_BACKUP_CODE: tr("wrong backup code"),
+  INVALID_CODE: tr("wrong authenticator code"),
+  INVALID_EMAIL_OR_PASSWORD: tr("wrong email or password"),
+  TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: tr("too many wrong codes, signed out"),
 };
 
 function describeEvent(event: SystemAuditEvent): string {
@@ -67,9 +68,13 @@ function describeEvent(event: SystemAuditEvent): string {
   switch (event.event) {
     case "part11_mode_changed":
     case "two_factor_requirement_changed":
-      return metadata.to === true ? "Turned on" : "Turned off";
+      return metadata.to === true ? tr("Turned on") : tr("Turned off");
     case "role_changed":
-      return `${target ?? "Account"}: ${String(metadata.from)} to ${String(metadata.to)}`;
+      return tr("{value}: {from} to {to}", {
+        value: target ?? "Account",
+        from: String(metadata.from),
+        to: String(metadata.to),
+      });
     case "settings_changed":
       return typeof metadata.changes === "object" && metadata.changes
         ? Object.keys(metadata.changes).join(", ")
@@ -79,7 +84,9 @@ function describeEvent(event: SystemAuditEvent): string {
     case "reauthentication_failed":
     case "signing_locked":
       return typeof metadata.failedAttempts === "number"
-        ? `${String(metadata.failedAttempts)} wrong in a row`
+        ? tr("{failedAttempts} wrong in a row", {
+            failedAttempts: String(metadata.failedAttempts),
+          })
         : "";
     case "sign_in_failed":
       return typeof metadata.reason === "string"
@@ -87,16 +94,22 @@ function describeEvent(event: SystemAuditEvent): string {
         : "";
     case "sign_in_succeeded":
       return metadata.secondStep === "backup_code"
-        ? "with a backup code"
+        ? tr("with a backup code")
         : metadata.secondStep === "authenticator"
-          ? "with an authenticator code"
+          ? tr("with an authenticator code")
           : "";
     case "logo_changed":
       return metadata.action === "removed" ? "Removed" : "Replaced";
     case "email_domain_changed":
       return typeof metadata.domain === "string" ? metadata.domain : "";
     case "documents_erased":
-      return `${String(metadata.deleted ?? 0)} deleted${typeof metadata.companyRef === "string" ? ` (company ${metadata.companyRef})` : ""}`;
+      return tr("{value} deleted{value2}", {
+        value: String(metadata.deleted ?? 0),
+        value2:
+          typeof metadata.companyRef === "string"
+            ? tr(" (company {companyRef})", { companyRef: metadata.companyRef })
+            : "",
+      });
     default:
       return target ?? "";
   }
@@ -104,18 +117,18 @@ function describeEvent(event: SystemAuditEvent): string {
 
 function describeMinutes(minutes: number): string {
   return minutes < 60
-    ? `${String(minutes)} minutes`
+    ? tr("{minutes} minutes", { minutes: String(minutes) })
     : minutes === 60
-      ? "1 hour"
-      : `${String(minutes / 60)} hours`;
+      ? tr("1 hour")
+      : tr("{value} hours", { value: String(minutes / 60) });
 }
 
 function describeHours(hours: number): string {
   return hours % 24 === 0
     ? hours === 24
-      ? "1 day"
-      : `${String(hours / 24)} days`
-    : `${String(hours)} hours`;
+      ? tr("1 day")
+      : tr("{value} days", { value: String(hours / 24) })
+    : tr("{hours} hours", { hours: String(hours) });
 }
 
 export function SecurityPanel({
@@ -225,7 +238,7 @@ export function SecurityPanel({
 
       setSavedLimits(saved);
       setLimits(saved);
-      setLimitsMessage("Session limits saved.");
+      setLimitsMessage(tr("Session limits saved."));
       setAuditRevision((value) => value + 1);
     } catch {
       setError(GENERIC_ERROR_MESSAGE);
@@ -242,15 +255,12 @@ export function SecurityPanel({
     <div className="space-y-5 border-t border-(--border) pt-8" id="security">
       <div className="space-y-2">
         <h3 className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-          Sign-in security
+          {tr("Sign-in security")}
         </h3>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Two-step sign-in asks for a code from an authenticator app (such as
-          1Password, Google Authenticator or Microsoft Authenticator) after the
-          password. When you require it, anyone who has not set it up is asked
-          to do so the next time they open the app, and can do nothing else
-          until they have. Ten wrong passwords for one email address stop
-          sign-in for it for 15 minutes either way.
+          {tr(
+            "Two-step sign-in asks for a code from an authenticator app (such as 1Password, Google Authenticator or Microsoft Authenticator) after the password. When you require it, anyone who has not set it up is asked to do so the next time they open the app, and can do nothing else until they have. Ten wrong passwords for one email address stop sign-in for it for 15 minutes either way.",
+          )}
         </p>
       </div>
 
@@ -264,7 +274,7 @@ export function SecurityPanel({
         <span
           className={`pill ${requireTwoFactor ? "pill-success" : "pill-neutral"}`}
         >
-          {requireTwoFactor ? "Required for everyone" : "Optional"}
+          {requireTwoFactor ? tr("Required for everyone") : "Optional"}
         </span>
         <button
           className={
@@ -275,24 +285,26 @@ export function SecurityPanel({
           type="button"
         >
           {isSaving
-            ? "Saving..."
+            ? tr("Saving...")
             : requireTwoFactor
-              ? "Stop requiring two-step sign-in"
-              : "Require two-step sign-in"}
+              ? tr("Stop requiring two-step sign-in")
+              : tr("Require two-step sign-in")}
         </button>
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-[0.9375rem] font-bold text-(--fg)">Sessions</h4>
+        <h4 className="text-[0.9375rem] font-bold text-(--fg)">
+          {tr("Sessions")}
+        </h4>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          How long someone stays signed in. A change applies to everyone who is
-          signed in now, from their next click. Anyone can also sign out
-          everywhere from their own Settings.
+          {tr(
+            "How long someone stays signed in. A change applies to everyone who is signed in now, from their next click. Anyone can also sign out everywhere from their own Settings.",
+          )}
         </p>
         <div className="grid max-w-xl gap-4 sm:grid-cols-2">
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Sign out after no use for
+              {tr("Sign out after no use for")}
             </span>
             <select
               className="field-input"
@@ -309,7 +321,7 @@ export function SecurityPanel({
               }}
               value={limits.sessionIdleMinutes ?? ""}
             >
-              <option value="">Never</option>
+              <option value="">{tr("Never")}</option>
               {SESSION_IDLE_CHOICES.map((minutes) => (
                 <option key={minutes} value={minutes}>
                   {describeMinutes(minutes)}
@@ -319,7 +331,7 @@ export function SecurityPanel({
           </label>
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Sign out at the latest after
+              {tr("Sign out at the latest after")}
             </span>
             <select
               className="field-input"
@@ -336,7 +348,7 @@ export function SecurityPanel({
               }}
               value={limits.sessionMaxHours ?? ""}
             >
-              <option value="">7 days (the default)</option>
+              <option value="">{tr("7 days (the default)")}</option>
               {SESSION_MAX_HOURS_CHOICES.filter((hours) => hours !== 168).map(
                 (hours) => (
                   <option key={hours} value={hours}>
@@ -354,7 +366,7 @@ export function SecurityPanel({
             onClick={() => void saveLimits()}
             type="button"
           >
-            {isSaving ? "Saving..." : "Save session limits"}
+            {isSaving ? tr("Saving...") : tr("Save session limits")}
           </button>
           {limitsMessage ? (
             <span className="text-sm text-(--secondary)" role="status">
@@ -367,7 +379,7 @@ export function SecurityPanel({
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h4 className="text-[0.9375rem] font-bold text-(--fg)">
-            Site audit trail
+            {tr("Site audit trail")}
           </h4>
           <div className="flex flex-wrap gap-2">
             <button
@@ -375,18 +387,17 @@ export function SecurityPanel({
               onClick={() => setAuditRevision((value) => value + 1)}
               type="button"
             >
-              Refresh
+              {tr("Refresh")}
             </button>
             <a className="btn-quiet" href="/api/admin/audit?format=csv">
-              Download as CSV
+              {tr("Download as CSV")}
             </a>
           </div>
         </div>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Sign-ins and failed sign-ins, changes to how people sign in, and
-          changes to settings, roles, the logo, identity confirmations and
-          signing locks. Each envelope has its own trail too, which its sender
-          can export from the envelope&apos;s page.
+          {tr(
+            "Sign-ins and failed sign-ins, changes to how people sign in, and changes to settings, roles, the logo, identity confirmations and signing locks. Each envelope has its own trail too, which its sender can export from the envelope's page.",
+          )}
         </p>
 
         {audit?.error ? (
@@ -401,16 +412,23 @@ export function SecurityPanel({
             role="status"
           >
             {audit.chain.ok
-              ? `Hash chain intact across ${String(audit.chain.events)} events.`
-              : `The hash chain is broken at event ${String(audit.chain.brokenAtSequence)}: a row was changed or removed.`}
+              ? tr("Hash chain intact across {events} events.", {
+                  events: String(audit.chain.events),
+                })
+              : tr(
+                  "The hash chain is broken at event {brokenAtSequence}: a row was changed or removed.",
+                  { brokenAtSequence: String(audit.chain.brokenAtSequence) },
+                )}
           </p>
         ) : null}
 
         {audit?.events ? (
           audit.events.length === 0 ? (
-            <p className="text-sm text-(--secondary)">Nothing recorded yet.</p>
+            <p className="text-sm text-(--secondary)">
+              {tr("Nothing recorded yet.")}
+            </p>
           ) : (
-            <ul aria-label="Site audit trail" className="space-y-2">
+            <ul aria-label={tr("Site audit trail")} className="space-y-2">
               {audit.events.map((event) => (
                 <li className="well p-3 text-sm" key={event.id}>
                   <p className="font-semibold text-(--fg)">

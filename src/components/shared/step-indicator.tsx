@@ -1,4 +1,5 @@
 import { CheckIcon } from "lucide-react";
+import { tr } from "@/lib/petsky/locale";
 
 type StepIndicatorProps = {
   current: number;
@@ -8,7 +9,7 @@ type StepIndicatorProps = {
 export function StepIndicator({ current, steps }: StepIndicatorProps) {
   return (
     <nav
-      aria-label="Progress"
+      aria-label={tr("Progress")}
       className="panel px-3 py-3 sm:px-4"
       data-animate="enter"
       data-animate-delay="1"

@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { tr } from "@/lib/petsky/locale";
 
 export type ShellNavItem = {
   href: string;
@@ -6,10 +7,10 @@ export type ShellNavItem = {
 };
 
 export const primaryNavItems: ShellNavItem[] = [
-  { href: "/dashboard", label: "Documents" },
-  { href: "/templates", label: "Templates" },
-  { href: "/envelopes/new", label: "New envelope" },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: tr("Documents") },
+  { href: "/templates", label: tr("Templates") },
+  { href: "/envelopes/new", label: tr("New envelope") },
+  { href: "/settings", label: tr("Settings") },
 ];
 
 export const ChevronLeftIcon = ChevronLeft;

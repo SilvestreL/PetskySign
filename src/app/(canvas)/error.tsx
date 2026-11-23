@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusPanel } from "@/components/shared/status-panel";
+import { tr } from "@/lib/petsky/locale";
 
 export default function CanvasError({
   reset,
@@ -11,17 +12,19 @@ export default function CanvasError({
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <StatusPanel
-        description="Something went wrong while opening this document. Please try again."
+        description={tr(
+          "Something went wrong while opening this document. Please try again.",
+        )}
         footer={
           <button
             className="btn-quiet min-h-11 px-5"
             onClick={reset}
             type="button"
           >
-            Reload canvas
+            {tr("Reload canvas")}
           </button>
         }
-        title="We couldn't open this document."
+        title={tr("We couldn't open this document.")}
         tone="error"
       />
     </div>

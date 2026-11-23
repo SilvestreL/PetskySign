@@ -1,7 +1,9 @@
+import { tr } from "@/lib/petsky/locale";
+
 export default function AuthLoading() {
   return (
     <section
-      aria-label="Loading authentication page"
+      aria-label={tr("Loading authentication page")}
       className="panel w-full max-w-[440px] p-8 sm:p-10"
     >
       <div className="space-y-3">

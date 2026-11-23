@@ -65,6 +65,7 @@ import {
 import { InteractivePlacedField } from "./interactive-placed-field";
 import { PdfPageCanvas } from "./pdf-page-canvas";
 import { getSignerPalette } from "./signer-palette";
+import { tr } from "@/lib/petsky/locale";
 
 type PrepareFieldType = FieldPlacement["type"];
 
@@ -148,82 +149,82 @@ const fieldTools: readonly FieldTool[] = [
   {
     defaultHeight: 0.07,
     defaultWidth: 0.24,
-    label: "Signature",
+    label: tr("Signature"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Sign",
+    placeholderLabel: tr("Sign"),
     type: "signature",
   },
   {
     defaultHeight: 0.055,
     defaultWidth: 0.14,
-    label: "Initials",
+    label: tr("Initials"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Initials",
+    placeholderLabel: tr("Initials"),
     type: "initials",
   },
   {
     defaultHeight: 0.045,
     defaultWidth: 0.12,
-    label: "Date",
+    label: tr("Date"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Date",
+    placeholderLabel: tr("Date"),
     type: "date",
   },
   {
     defaultHeight: 0.045,
     defaultWidth: 0.2,
-    label: "Name",
+    label: tr("Name"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Name",
+    placeholderLabel: tr("Name"),
     type: "name",
   },
   {
     defaultHeight: 0.055,
     defaultWidth: 0.18,
-    label: "Text",
+    label: tr("Text"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Text",
+    placeholderLabel: tr("Text"),
     type: "text",
   },
   {
     defaultHeight: 0.023,
     defaultWidth: 0.03,
-    label: "Checkbox",
+    label: tr("Checkbox"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Checkbox",
+    placeholderLabel: tr("Checkbox"),
     type: "checkbox",
   },
   {
     defaultHeight: 0.045,
     defaultWidth: 0.16,
-    label: "Number",
+    label: tr("Number"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Number",
+    placeholderLabel: tr("Number"),
     type: "number",
   },
   {
     defaultHeight: 0.045,
     defaultWidth: 0.22,
-    label: "Dropdown",
+    label: tr("Dropdown"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Dropdown",
+    placeholderLabel: tr("Dropdown"),
     type: "dropdown",
   },
   {
     defaultHeight: 0.023,
     defaultWidth: 0.03,
-    label: "Radio button",
+    label: tr("Radio button"),
     minHeight: 0.0045,
     minWidth: 0.006,
-    placeholderLabel: "Radio button",
+    placeholderLabel: tr("Radio button"),
     type: "radio",
   },
 ] as const;
@@ -260,7 +261,7 @@ function newLocalId() {
     : `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const genericSubmitError = "Something went wrong. Please try again.";
+const genericSubmitError = tr("Something went wrong. Please try again.");
 const autosaveDelayMs = 450;
 
 function buildLiveSigners(
@@ -365,9 +366,7 @@ async function parseJsonResponse<T>(
   response: Response,
 ): Promise<{ data: T | null; error: string | null }> {
   const payload = (await response.json().catch(() => null)) as
-    | { error?: string }
-    | T
-    | null;
+    { error?: string } | T | null;
 
   if (!response.ok) {
     return {
@@ -404,11 +403,11 @@ function PrepareLiveShellError({ envelopeId }: { envelopeId: string }) {
   return (
     <CanvasShell
       backHref={`/envelopes/${envelopeId}/signers`}
-      backLabel="Back"
+      backLabel={tr("Back")}
       nextDisabled
-      nextLabel="Next →"
-      stepLabel="Step 3 of 4"
-      title='"Document"'
+      nextLabel={tr("Next →")}
+      stepLabel={tr("Step 3 of 4")}
+      title={`"${tr("Document")}"`}
     >
       <div className="flex min-h-[calc(100vh-73px)] items-center justify-center p-4 sm:p-6 lg:p-8">
         <section className="panel w-full max-w-[520px] p-8 text-center sm:p-10">
@@ -416,17 +415,17 @@ function PrepareLiveShellError({ envelopeId }: { envelopeId: string }) {
             !
           </div>
           <h1 className="mt-5 text-2xl font-extrabold tracking-[-0.03em] text-(--fg)">
-            Couldn&apos;t load this document
+            {tr("Couldn't load this document")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-(--secondary)">
-            Something went wrong. Please try again.
+            {tr("Something went wrong. Please try again.")}
           </p>
           <Button
             className="mt-7"
             onClick={() => window.location.reload()}
             type="button"
           >
-            Retry
+            {tr("Retry")}
           </Button>
         </section>
       </div>
@@ -499,7 +498,7 @@ function PrepareLiveShellContent({
     ? describeChoiceFieldProblem(
         choiceProblem,
         signers.find((signer) => signer.id === choiceProblem.signerId)?.name ??
-          "a signer",
+          tr("a signer"),
       )
     : null;
   const canContinue = missingSignatureSigner == null && choiceProblem == null;
@@ -759,12 +758,12 @@ function PrepareLiveShellContent({
   return (
     <CanvasShell
       backHref={`/envelopes/${envelopeId}/signers`}
-      backLabel="Back"
+      backLabel={tr("Back")}
       nextDisabled={!canContinue}
-      nextLabel="Next →"
+      nextLabel={tr("Next →")}
       nextLoading={isContinuing}
       onNext={handleContinue}
-      stepLabel="Step 3 of 4"
+      stepLabel={tr("Step 3 of 4")}
       title={`"${record.title}"`}
     >
       <div className="grid min-h-[calc(100vh-73px)] lg:grid-cols-[272px_minmax(0,1fr)_304px]">
@@ -831,16 +830,12 @@ function PrepareLiveShellContent({
                 <DocumentZoomControls
                   onDecrease={() =>
                     setZoomLevel((currentZoom) =>
-                      clampDocumentZoomLevel(
-                        currentZoom - DOCUMENT_ZOOM_STEP,
-                      ),
+                      clampDocumentZoomLevel(currentZoom - DOCUMENT_ZOOM_STEP),
                     )
                   }
                   onIncrease={() =>
                     setZoomLevel((currentZoom) =>
-                      clampDocumentZoomLevel(
-                        currentZoom + DOCUMENT_ZOOM_STEP,
-                      ),
+                      clampDocumentZoomLevel(currentZoom + DOCUMENT_ZOOM_STEP),
                     )
                   }
                   onReset={() => setZoomLevel(DEFAULT_DOCUMENT_ZOOM_LEVEL)}
@@ -850,7 +845,7 @@ function PrepareLiveShellContent({
 
               <div className="flex items-center justify-center gap-3">
                 <button
-                  aria-label="Previous page"
+                  aria-label={tr("Previous page")}
                   className="btn-quiet size-10 px-0"
                   disabled={activePage === 1}
                   onClick={() =>
@@ -867,13 +862,16 @@ function PrepareLiveShellContent({
                   <ChevronLeftIcon className="size-4" />
                 </button>
                 <div className="min-w-[7.5rem] text-center">
-                  <p className="sr-only">Document page</p>
+                  <p className="sr-only">{tr("Document page")}</p>
                   <p className="text-sm font-bold text-(--fg)">
-                    {`Page ${activePage} of ${pageCount}`}
+                    {tr("Page {page} of {count}", {
+                      count: pageCount,
+                      page: activePage,
+                    })}
                   </p>
                 </div>
                 <button
-                  aria-label="Next page"
+                  aria-label={tr("Next page")}
                   className="btn-quiet size-10 px-0"
                   disabled={activePage === pageCount}
                   onClick={() =>
@@ -893,7 +891,9 @@ function PrepareLiveShellContent({
 
               <div className="flex justify-center lg:justify-end">
                 <SaveStatusIndicator
-                  onRetrySave={() => void persistFields(currentFieldsRef.current)}
+                  onRetrySave={() =>
+                    void persistFields(currentFieldsRef.current)
+                  }
                   saveError={saveError}
                   saveState={saveState}
                 />
@@ -905,10 +905,10 @@ function PrepareLiveShellContent({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <label className="grid flex-1 gap-1.5">
                 <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                  Selected signer
+                  {tr("Selected signer")}
                 </span>
                 <select
-                  aria-label="Selected signer"
+                  aria-label={tr("Selected signer")}
                   className="field-input"
                   onChange={(event) => setSelectedSignerId(event.target.value)}
                   value={selectedSignerId}
@@ -926,7 +926,7 @@ function PrepareLiveShellContent({
                 type="button"
                 variant="secondary"
               >
-                Open field tools
+                {tr("Open field tools")}
               </Button>
             </div>
           </div>
@@ -984,7 +984,10 @@ function PrepareLiveShellContent({
 
                     {armedTool ? (
                       <button
-                        aria-label={`Place ${getFieldTool(armedTool).label} on page ${activePage}`}
+                        aria-label={tr("Place {field} on page {page}", {
+                          field: getFieldTool(armedTool).label,
+                          page: activePage,
+                        })}
                         className="absolute inset-0 z-10 cursor-copy bg-transparent"
                         onClick={(event) =>
                           placeField(
@@ -1001,8 +1004,9 @@ function PrepareLiveShellContent({
                         type="button"
                       >
                         <span className="sr-only">
-                          Place {getFieldTool(armedTool).label} on the document
-                          page
+                          {tr("Place {field} on the document page", {
+                            field: getFieldTool(armedTool).label,
+                          })}
                         </span>
                       </button>
                     ) : null}
@@ -1011,11 +1015,12 @@ function PrepareLiveShellContent({
                       <div className="absolute inset-0 z-1 flex items-center justify-center px-6">
                         <div className="max-w-[300px] rounded-[1.25rem] border-2 border-dashed border-(--border-strong) bg-white/92 px-6 py-7 text-center">
                           <p className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-                            No fields placed yet
+                            {tr("No fields placed yet")}
                           </p>
                           <p className="mt-2 text-sm leading-6 text-(--secondary)">
-                            Pick a field, then click the page to place it for
-                            the selected signer.
+                            {tr(
+                              "Pick a field, then click the page to place it for the selected signer.",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1034,7 +1039,9 @@ function PrepareLiveShellContent({
                           key={field.id}
                           label={
                             field.type === "radio" && field.label
-                              ? `Radio button: ${field.label}`
+                              ? tr("Radio button: {label}", {
+                                  label: field.label,
+                                })
                               : getFieldTool(field.type).placeholderLabel
                           }
                           onInteractionChange={setIsFieldInteracting}
@@ -1063,7 +1070,7 @@ function PrepareLiveShellContent({
                     {armedTool ? (
                       <div className="pointer-events-none absolute inset-x-4 bottom-4 z-11 rounded-2xl bg-white/95 px-4 py-3 shadow-(--shadow-lift) ring-1 ring-[rgb(var(--accent-rgb)/0.18)] sm:inset-x-6 sm:bottom-6">
                         <p className="text-[0.8125rem] font-bold text-(--accent-ink)">
-                          Ready to place
+                          {tr("Ready to place")}
                         </p>
                         <p className="mt-1 text-sm text-(--secondary)">
                           Click the page to place{" "}
@@ -1137,13 +1144,13 @@ function PrepareLiveShellContent({
       {isMobileToolsOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden">
           <button
-            aria-label="Close field tools"
+            aria-label={tr("Close field tools")}
             className="absolute inset-0 bg-[rgba(28,29,43,0.32)]"
             onClick={() => setIsMobileToolsOpen(false)}
             type="button"
           />
           <div
-            aria-label="Field tools"
+            aria-label={tr("Field tools")}
             className="absolute inset-x-0 bottom-0 rounded-t-[1.75rem] bg-white px-4 py-5 shadow-[0_-24px_60px_rgba(28,29,43,0.18)]"
             role="dialog"
           >
@@ -1156,7 +1163,7 @@ function PrepareLiveShellContent({
                   onClick={() => setIsMobileToolsOpen(false)}
                   type="button"
                 >
-                  Done
+                  {tr("Done")}
                 </button>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -1225,7 +1232,7 @@ function FieldToolButton({ isActive, onSelect, tool }: FieldToolButtonProps) {
           isActive ? "text-white/85" : "text-(--tertiary)"
         }`}
       >
-        {isActive ? "Placing" : "Place"}
+        {isActive ? tr("Placing") : tr("Place")}
       </span>
     </button>
   );
@@ -1263,7 +1270,9 @@ function SignerCard({
             .join("")}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-(--fg)">{signer.name}</p>
+          <p className="truncate text-sm font-bold text-(--fg)">
+            {signer.name}
+          </p>
           <p className="mt-0.5 text-xs text-(--secondary)">
             {fieldCount} field{fieldCount === 1 ? "" : "s"} placed
           </p>
@@ -1272,7 +1281,7 @@ function SignerCard({
               hasSignatureField ? "text-(--success)" : "text-(--danger)"
             }`}
           >
-            {hasSignatureField ? "Signature ready" : "Signature needed"}
+            {hasSignatureField ? tr("Signature ready") : tr("Signature needed")}
           </p>
         </div>
       </div>
@@ -1292,12 +1301,19 @@ function EmptyFieldInspector({
   return (
     <div className="well px-4 py-4">
       <p className="text-sm font-bold text-(--fg)">
-        {activeTool ? `${activeTool.label} ready to place` : "No field selected"}
+        {activeTool
+          ? tr("{field} ready to place", { field: activeTool.label })
+          : tr("No field selected")}
       </p>
       <p className="mt-1.5 text-sm leading-6 text-(--secondary)">
         {activeTool
-          ? `Click the document to place ${activeTool.label.toLowerCase()} for ${selectedSigner.name}.`
-          : "Select a field on the page to edit its settings, or choose a field tool on the left to place a new one."}
+          ? tr("Click the document to place {field} for {name}.", {
+              field: activeTool.label.toLowerCase(),
+              name: selectedSigner.name,
+            })
+          : tr(
+              "Select a field on the page to edit its settings, or choose a field tool on the left to place a new one.",
+            )}
       </p>
     </div>
   );
@@ -1314,7 +1330,7 @@ function SelectedSignerPanel({
 
   return (
     <section className="panel space-y-3 rounded-[1.25rem] p-4">
-      <p className="section-eyebrow px-1">Selected signer</p>
+      <p className="section-eyebrow px-1">{tr("Selected signer")}</p>
       <div className="flex items-center gap-3 px-1">
         <span
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold"
@@ -1334,8 +1350,8 @@ function SelectedSignerPanel({
           </p>
           <p className="mt-0.5 text-[0.8125rem] text-(--secondary)">
             {activeTool
-              ? `Placing ${activeTool.label.toLowerCase()}`
-              : "New fields will be assigned here"}
+              ? tr("Placing {field}", { field: activeTool.label.toLowerCase() })
+              : tr("New fields will be assigned here")}
           </p>
         </div>
       </div>
@@ -1396,7 +1412,11 @@ function SaveStatusIndicator({
       </span>
       <div className="min-w-0">
         <p className="font-bold text-(--fg)">
-          {isError ? "Save failed" : isSaving ? "Saving..." : "Saved"}
+          {isError
+            ? tr("Save failed")
+            : isSaving
+              ? tr("Saving...")
+              : tr("Saved")}
         </p>
         {saveError ? (
           <p className="truncate text-xs text-(--danger)">{saveError}</p>
@@ -1408,7 +1428,7 @@ function SaveStatusIndicator({
           onClick={onRetrySave}
           type="button"
         >
-          Retry
+          {tr("Retry")}
         </button>
       ) : null}
     </div>
@@ -1450,9 +1470,9 @@ function FieldEditor({
   const labelId = `${editorId}-label`;
 
   return (
-    <section aria-label="Field settings" role="region">
+    <section aria-label={tr("Field settings")} role="region">
       <div className="px-1">
-        <p className="section-eyebrow">Field settings</p>
+        <p className="section-eyebrow">{tr("Field settings")}</p>
         <p className="mt-1 text-base font-extrabold text-(--fg)">
           {tool.label}
         </p>
@@ -1461,7 +1481,7 @@ function FieldEditor({
       <div className="mt-4 space-y-4">
         <div>
           <p className="px-1 text-[0.8125rem] font-semibold text-(--secondary)">
-            Assigned to
+            {tr("Assigned to")}
           </p>
           <div className="mt-2 grid gap-2">
             {signers.map((signer) => {
@@ -1497,7 +1517,7 @@ function FieldEditor({
               className="block px-1 text-[0.8125rem] font-semibold text-(--secondary)"
               htmlFor={optionsId}
             >
-              Choices
+              {tr("Choices")}
             </label>
             <textarea
               aria-describedby={`${optionsId}-help`}
@@ -1507,7 +1527,7 @@ function FieldEditor({
                 setOptionsDraft(event.target.value);
                 onSetOptions(parseOptionLines(event.target.value));
               }}
-              placeholder={"Yes\nNo\nNot sure"}
+              placeholder={tr("Yes\nNo\nNot sure")}
               spellCheck={false}
               value={shownOptions}
             />
@@ -1520,8 +1540,11 @@ function FieldEditor({
               id={`${optionsId}-help`}
             >
               {optionCount < 2
-                ? "One choice per line. Add at least two."
-                : `One choice per line. ${String(optionCount)} of up to ${String(MAX_FIELD_OPTIONS)}. The signer picks one.`}
+                ? tr("One choice per line. Add at least two.")
+                : tr(
+                    "One choice per line. {count} of up to {max}. The signer picks one.",
+                    { count: optionCount, max: MAX_FIELD_OPTIONS },
+                  )}
             </p>
           </div>
         ) : null}
@@ -1532,7 +1555,7 @@ function FieldEditor({
               className="block px-1 text-[0.8125rem] font-semibold text-(--secondary)"
               htmlFor={labelId}
             >
-              What this button means
+              {tr("What this button means")}
             </label>
             <input
               aria-describedby={`${labelId}-help`}
@@ -1543,7 +1566,7 @@ function FieldEditor({
                 setLabelDraft(event.target.value);
                 onSetLabel(event.target.value.trim() || undefined);
               }}
-              placeholder="Yes"
+              placeholder={tr("Yes")}
               value={shownLabel}
             />
             <p
@@ -1555,8 +1578,10 @@ function FieldEditor({
               id={`${labelId}-help`}
             >
               {groupSize < 2
-                ? "A radio button needs at least one more in its group."
-                : `${String(groupSize)} buttons in this group. The signer picks one.`}
+                ? tr("A radio button needs at least one more in its group.")
+                : tr("{count} buttons in this group. The signer picks one.", {
+                    count: groupSize,
+                  })}
             </p>
             <button
               className="btn-quiet mt-2 w-full"
@@ -1564,7 +1589,7 @@ function FieldEditor({
               onClick={onAddRadioButton}
               type="button"
             >
-              + Add a button to this group
+              {tr("+ Add a button to this group")}
             </button>
           </div>
         ) : null}
@@ -1572,16 +1597,18 @@ function FieldEditor({
         {isOptionalField ? (
           <div>
             <p className="px-1 text-[0.8125rem] font-semibold text-(--secondary)">
-              {field.type === "radio" ? "Required (whole group)" : "Required"}
+              {field.type === "radio"
+                ? tr("Required (whole group)")
+                : tr("Required")}
             </p>
             <div className="segmented mt-2 flex w-full">
               {[
                 {
-                  label: "Required",
+                  label: tr("Required"),
                   value: true,
                 },
                 {
-                  label: "Optional",
+                  label: tr("Optional"),
                   value: false,
                 },
               ].map((option) => (
@@ -1605,7 +1632,7 @@ function FieldEditor({
           type="button"
           variant="ghost"
         >
-          Delete
+          {tr("Delete")}
         </Button>
       </div>
     </section>
@@ -1654,7 +1681,8 @@ function placeField(
       typeof window !== "undefined" && "crypto" in window
         ? window.crypto.randomUUID()
         : `field-${fieldCounterRef.current}`,
-    label: tool.type === "radio" ? "Option 1" : undefined,
+    label:
+      tool.type === "radio" ? tr("Option {number}", { number: 1 }) : undefined,
     options: tool.type === "dropdown" ? [] : undefined,
     page: activePage,
     // Text, number and checkbox fields start optional; a dropdown or a
@@ -1734,7 +1762,7 @@ function addRadioButton(
       {
         ...source,
         id: nextId,
-        label: `Option ${String(group.length + 1)}`,
+        label: tr("Option {number}", { number: group.length + 1 }),
         y: Math.min(1 - source.height, lowest + source.height * 1.6),
       },
     ];
@@ -1808,20 +1836,18 @@ function setFieldRequired(
   required: boolean,
   setFields: Dispatch<SetStateAction<PrepareField[]>>,
 ) {
-  setFields((currentFields) =>
-    {
-      const target = currentFields.find((field) => field.id === fieldId);
+  setFields((currentFields) => {
+    const target = currentFields.find((field) => field.id === fieldId);
 
-      if (!target || !canBeOptional(target.type)) {
-        return currentFields;
-      }
+    if (!target || !canBeOptional(target.type)) {
+      return currentFields;
+    }
 
-      // A radio group is required or optional as a whole.
-      return currentFields.map((field) =>
-        isSameChoice(target, field) ? { ...field, required } : field,
-      );
-    },
-  );
+    // A radio group is required or optional as a whole.
+    return currentFields.map((field) =>
+      isSameChoice(target, field) ? { ...field, required } : field,
+    );
+  });
 }
 
 function deleteField(

@@ -36,39 +36,40 @@
   --radius-2xl: calc(var(--radius) * 1.5);
   --radius-3xl: calc(var(--radius) * 1.75);
   --radius-4xl: calc(var(--radius) * 2.25);
-  --shadow-xs: 0 1px 2px rgba(28, 29, 43, 0.05);
-  --shadow-sm: 0 1px 3px rgba(28, 29, 43, 0.08);
-  --shadow: 0 2px 6px rgba(28, 29, 43, 0.05);
-  --shadow-md: 0 10px 30px rgba(28, 29, 43, 0.08);
-  --shadow-lg: 0 18px 40px rgba(28, 29, 43, 0.12);
+  --shadow-xs: 0 1px 2px rgba(24, 42, 58, 0.05);
+  --shadow-sm: 0 1px 3px rgba(24, 42, 58, 0.08);
+  --shadow: 0 2px 6px rgba(24, 42, 58, 0.05);
+  --shadow-md: 0 10px 30px rgba(24, 42, 58, 0.08);
+  --shadow-lg: 0 18px 40px rgba(24, 42, 58, 0.12);
 }
 
 /*
- * Soft Studio. A pale blue-grey page, white rounded cards that sit on it
- * without borders, one violet for anything the person can act on, and
+ * Petsky identity (same tokens as the petsky app): a pale blue-grey page,
+ * navy text, white rounded cards that sit on it without borders, Petsky
+ * blue (#2d6fd1) for anything the person can act on, and
  * status shown as tinted pills. Red is kept for errors and for actions that
  * cannot be undone.
  */
 :root {
-  --page: #f3f4f8;
-  --bg: #f3f4f8;
+  --page: #f5f7fa;
+  --bg: #f5f7fa;
   --paper: #ffffff;
   --paper-raised: #ffffff;
-  --fg: #1c1d2b;
-  --secondary: #575a6e;
-  --tertiary: #6e7183;
-  --placeholder: #8b8ea0;
+  --fg: #182a3a;
+  --secondary: #58657b;
+  --tertiary: #66738a;
+  --placeholder: #8a94a6;
   /*
    * The accent and its shades. An install with its own color replaces all
    * of these together, from a rule the layout adds (see brand-color.ts).
    */
-  --accent: #5340d6;
-  --accent-rgb: 83 64 214;
-  --accent-hover: #4433b8;
-  --accent-soft: #ece9fd;
-  --accent-soft-hover: #e0dbfb;
-  --accent-softer: #f4f2ff;
-  --accent-ink: #4433b8;
+  --accent: #2d6fd1;
+  --accent-rgb: 45 111 209;
+  --accent-hover: #265db0;
+  --accent-soft: #e8effa;
+  --accent-soft-hover: #d9e5f7;
+  --accent-softer: #f1f6fc;
+  --accent-ink: #265db0;
   --danger: #b42318;
   --danger-hover: #912018;
   --danger-soft: #fdebea;
@@ -76,18 +77,18 @@
   --success-soft: #e3f6ec;
   --warning: #8a5300;
   --warning-soft: #fdf1d8;
-  --surface: #f6f6fa;
-  --surface-strong: #e6e7ee;
+  --surface: #eef1f6;
+  --surface-strong: #e2e7ef;
   --shell-surface: #ffffff;
-  --border: #e6e7ee;
-  --border-strong: #cfd0dc;
-  --border-hover: #b4b6c6;
-  --hover: rgba(28, 29, 43, 0.05);
-  --shell-wash: #f3f4f8;
-  --canvas-wash: #e9eaf1;
-  --shadow-soft: 0 18px 40px rgba(28, 29, 43, 0.12);
-  --shadow-card: 0 2px 6px rgba(28, 29, 43, 0.04);
-  --shadow-lift: 0 10px 30px rgba(28, 29, 43, 0.08);
+  --border: #e7ebf1;
+  --border-strong: #cfd6e1;
+  --border-hover: #b3bccb;
+  --hover: rgba(24, 42, 58, 0.05);
+  --shell-wash: #f5f7fa;
+  --canvas-wash: #e8ecf2;
+  --shadow-soft: 0 18px 40px rgba(24, 42, 58, 0.12);
+  --shadow-card: 0 2px 6px rgba(24, 42, 58, 0.04);
+  --shadow-lift: 0 10px 30px rgba(24, 42, 58, 0.08);
   --signer-1: #2563eb;
   --signer-1-tint: rgba(37, 99, 235, 0.12);
   --signer-2: #9333ea;
@@ -119,8 +120,7 @@
     min-height: 100vh;
     background: var(--page);
     color: var(--fg);
-    font-family:
-      var(--font-ui), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-ui), "Inter", ui-sans-serif, system-ui, sans-serif;
     letter-spacing: -0.005em;
     text-rendering: optimizeLegibility;
   }
@@ -328,7 +328,7 @@
   .segmented-item[data-active="true"] {
     background: var(--paper);
     color: var(--fg);
-    box-shadow: 0 1px 3px rgba(28, 29, 43, 0.12);
+    box-shadow: 0 1px 3px rgba(24, 42, 58, 0.12);
   }
 
   /* A text field drawn without the Input component. */
@@ -451,7 +451,7 @@
   [data-paper-grid] {
     background-color: var(--canvas-wash);
     background-image: radial-gradient(
-      rgba(28, 29, 43, 0.07) 1px,
+      rgba(24, 42, 58, 0.07) 1px,
       transparent 1px
     );
     background-position: center center;

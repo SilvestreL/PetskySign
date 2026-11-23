@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import type { ReviewEnvelopeData } from "@/lib/envelopes";
 import { PERMITTED_USE_PATH } from "@/lib/permitted-uses";
-import { formatReminderInterval } from "@/lib/services/reminders";
 import {
   DEFAULT_ENVELOPE_DEADLINE_DAYS,
   DEFAULT_ENVELOPE_REMINDER_DAYS,
@@ -25,10 +24,32 @@ import {
   ENVELOPE_REMINDER_DAY_OPTIONS,
 } from "@/lib/types/domain";
 import { getSignerPalette } from "./signer-palette";
+import { tr } from "@/lib/petsky/locale";
 
-const envelopeSteps = ["Upload", "Signers", "Place fields", "Review"];
+const envelopeSteps = [
+  tr("Upload"),
+  tr("Signers"),
+  tr("Place fields"),
+  tr("Review"),
+];
 const redirectDelayMs = 1200;
-const defaultSendErrorMessage = "Failed to send. Please try again.";
+const defaultSendErrorMessage = tr("Failed to send. Please try again.");
+
+// The reminder choices, in the app's language (formatReminderInterval in
+// lib/services/reminders.ts stays in English for the server).
+function reminderIntervalLabel(intervalDays: number | null): string {
+  if (intervalDays === null) {
+    return tr("Off");
+  }
+
+  if (intervalDays === 1) {
+    return tr("Every day");
+  }
+
+  return intervalDays === 7
+    ? tr("Every week")
+    : tr("Every {count} days", { count: intervalDays });
+}
 
 type ReviewShellProps = {
   envelopeId: string;
@@ -73,16 +94,22 @@ type SignatureLevel = "advanced" | "qualified" | "simple";
 function describeSignatureLevel(level: SignatureLevel, providerName: string) {
   switch (level) {
     case "advanced":
-      return `Advanced electronic signatures through ${providerName}`;
+      return tr("Advanced electronic signatures through {provider}", {
+        provider: providerName,
+      });
     case "qualified":
-      return `Qualified electronic signatures through ${providerName}`;
+      return tr("Qualified electronic signatures through {provider}", {
+        provider: providerName,
+      });
     default:
-      return "Petsky signatures";
+      return tr("Petsky signatures");
   }
 }
 
 function buildSuccessMessage(firstSignerName: string) {
-  return `Envelope sent. ${firstSignerName} has been notified.`;
+  return tr("Envelope sent. {name} has been notified.", {
+    name: firstSignerName,
+  });
 }
 
 export function ReviewShell({
@@ -167,7 +194,9 @@ export function ReviewShell({
       }
 
       const notifiedSignerName =
-        payload?.notifiedSignerName?.trim() || firstSigner?.name || "Signer 1";
+        payload?.notifiedSignerName?.trim() ||
+        firstSigner?.name ||
+        tr("Signer {order}", { order: 1 });
       const redirectPath = payload?.redirectPath || `/envelopes/${envelopeId}`;
 
       setIsConfirmationOpen(false);
@@ -186,8 +215,8 @@ export function ReviewShell({
     return (
       <div className="space-y-5">
         <PageHeader
-          description="Step 4 of 4 - Review and send"
-          title="New envelope"
+          description={tr("Step 4 of 4 - Review and send")}
+          title={tr("New envelope")}
         />
         <StepIndicator current={4} steps={envelopeSteps} />
         <StatusPanel
@@ -196,11 +225,13 @@ export function ReviewShell({
               onClick={() => window.location.reload()}
               variant="secondary"
             >
-              Retry
+              {tr("Retry")}
             </ShellButton>
           }
-          description="We couldn't load this draft summary. Try again after checking the earlier steps."
-          title="Couldn't load the review summary"
+          description={tr(
+            "We couldn't load this draft summary. Try again after checking the earlier steps.",
+          )}
+          title={tr("Couldn't load the review summary")}
           tone="error"
         />
       </div>
@@ -211,18 +242,20 @@ export function ReviewShell({
     return (
       <div className="space-y-5">
         <PageHeader
-          description="Step 4 of 4 - Review and send"
-          title="New envelope"
+          description={tr("Step 4 of 4 - Review and send")}
+          title={tr("New envelope")}
         />
         <StepIndicator current={4} steps={envelopeSteps} />
         <StatusPanel
           action={{
             href: `/envelopes/${envelopeId}/prepare`,
-            label: "Back to prepare",
+            label: tr("Back to prepare"),
           }}
-          description="Add signers and place fields before you review the final summary for this envelope."
-          eyebrow="Incomplete draft"
-          title="Nothing to review yet"
+          description={tr(
+            "Add signers and place fields before you review the final summary for this envelope.",
+          )}
+          eyebrow={tr("Incomplete draft")}
+          title={tr("Nothing to review yet")}
         />
       </div>
     );
@@ -243,8 +276,8 @@ export function ReviewShell({
   return (
     <div className="space-y-5">
       <PageHeader
-        description="Step 4 of 4 - Review and send"
-        title="New envelope"
+        description={tr("Step 4 of 4 - Review and send")}
+        title={tr("New envelope")}
       />
 
       <StepIndicator current={4} steps={envelopeSteps} />
@@ -253,7 +286,7 @@ export function ReviewShell({
         <section className="notice notice-success" role="status">
           <p>{notice}</p>
           <p className="mt-0.5 font-medium text-(--secondary)">
-            Opening the envelope detail view...
+            {tr("Opening the envelope detail view...")}
           </p>
         </section>
       ) : null}
@@ -265,7 +298,7 @@ export function ReviewShell({
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]">
           <article className="well flex flex-col gap-5 p-5 sm:p-6">
-            <p className="section-eyebrow">Document</p>
+            <p className="section-eyebrow">{tr("Document")}</p>
             <div className="flex h-56 items-center justify-center">
               <DocumentThumbnail
                 envelopeId={envelopeId}
@@ -277,7 +310,8 @@ export function ReviewShell({
                 {activeRecord.title}
               </h2>
               <p className="text-sm leading-6 text-(--secondary)">
-                {activeRecord.filename} - {activeRecord.pageCount} pages -{" "}
+                {activeRecord.filename} -{" "}
+                {tr("{count} pages", { count: activeRecord.pageCount })} -{" "}
                 {activeRecord.sizeLabel}
               </p>
             </div>
@@ -286,11 +320,14 @@ export function ReviewShell({
           <article className="min-w-0">
             <div className="flex items-center justify-between gap-3 px-1">
               <h2 className="text-lg font-extrabold text-(--fg)">
-                Signing order
+                {tr("Signing order")}
               </h2>
               <span className="pill pill-neutral">
-                {activeRecord.signers.length}{" "}
-                {activeRecord.signers.length === 1 ? "signer" : "signers"}
+                {activeRecord.signers.length === 1
+                  ? tr("{count} signer", { count: 1 })
+                  : tr("{count} signers", {
+                      count: activeRecord.signers.length,
+                    })}
               </span>
             </div>
 
@@ -336,7 +373,7 @@ export function ReviewShell({
                               className="size-2 rounded-full"
                               style={{ backgroundColor: palette.color }}
                             />
-                            Signer {signer.order}
+                            {tr("Signer {order}", { order: signer.order })}
                           </span>
                         </div>
 
@@ -359,7 +396,7 @@ export function ReviewShell({
             {activeRecord.copyRecipients.length > 0 ? (
               <div className="well mt-3 p-4">
                 <p className="text-[0.9375rem] font-bold text-(--fg)">
-                  Copies when everyone has signed
+                  {tr("Copies when everyone has signed")}
                 </p>
                 <ul className="mt-2 space-y-1 text-sm leading-6 text-(--secondary)">
                   {activeRecord.copyRecipients.map((recipient) => (
@@ -372,16 +409,16 @@ export function ReviewShell({
             ) : null}
 
             <p className="notice notice-accent mt-4 font-medium">
-              After you send, Signer 1 will receive an email with a link to
-              sign. Each signer is notified in order after the previous signer
-              completes.
+              {tr(
+                "After you send, Signer 1 will receive an email with a link to sign. Each signer is notified in order after the previous signer completes.",
+              )}
             </p>
 
             <div className="well mt-4 p-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-1.5">
                   <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                    Signing deadline
+                    {tr("Signing deadline")}
                   </span>
                   <select
                     className="field-input"
@@ -393,14 +430,14 @@ export function ReviewShell({
                   >
                     {ENVELOPE_DEADLINE_DAY_OPTIONS.map((days) => (
                       <option key={days} value={days}>
-                        {days} days
+                        {tr("{count} days", { count: days })}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="grid gap-1.5">
                   <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                    Automatic reminders
+                    {tr("Automatic reminders")}
                   </span>
                   <select
                     className="field-input"
@@ -414,19 +451,19 @@ export function ReviewShell({
                     }
                     value={reminderDays ?? "off"}
                   >
-                    <option value="off">{formatReminderInterval(null)}</option>
+                    <option value="off">{reminderIntervalLabel(null)}</option>
                     {ENVELOPE_REMINDER_DAY_OPTIONS.map((days) => (
                       <option key={days} value={days}>
-                        {formatReminderInterval(days)}
+                        {reminderIntervalLabel(days)}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
               <p className="mt-3 text-sm leading-6 text-(--secondary)">
-                Signing links stop working at the deadline. Reminders go to the
-                signer whose turn it is until they sign. You can change both
-                later from the envelope.
+                {tr(
+                  "Signing links stop working at the deadline. Reminders go to the signer whose turn it is until they sign. You can change both later from the envelope.",
+                )}
               </p>
             </div>
 
@@ -434,7 +471,7 @@ export function ReviewShell({
               <div className="well mt-4 p-4">
                 <label className="grid gap-1.5">
                   <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                    Signature type
+                    {tr("Signature type")}
                   </span>
                   <select
                     className="field-input"
@@ -458,8 +495,21 @@ export function ReviewShell({
                 </label>
                 <p className="mt-3 text-sm leading-6 text-(--secondary)">
                   {signatureLevel === "simple"
-                    ? "Signers sign here, and the finished PDF is sealed by this install."
-                    : `Each signer proves who they are at ${record.signingProvider.name} and signs with a certificate in their own name. ${signatureLevel === "qualified" ? "A qualified signature needs a qualified certificate, which not every signer has. " : ""}Which type a document needs is a legal question; this is not legal advice.`}
+                    ? tr(
+                        "Signers sign here, and the finished PDF is sealed by this install.",
+                      )
+                    : `${tr(
+                        "Each signer proves who they are at {provider} and signs with a certificate in their own name.",
+                        { provider: record.signingProvider.name },
+                      )} ${
+                        signatureLevel === "qualified"
+                          ? `${tr(
+                              "A qualified signature needs a qualified certificate, which not every signer has.",
+                            )} `
+                          : ""
+                      }${tr(
+                        "Which type a document needs is a legal question; this is not legal advice.",
+                      )}`}
                 </p>
               </div>
             ) : null}
@@ -477,10 +527,10 @@ export function ReviewShell({
             href={`/envelopes/${envelopeId}/prepare`}
             variant="secondary"
           >
-            ← Back
+            {tr("← Back")}
           </ShellButton>
           <ShellButton disabled={!canSend} onClick={openConfirmation}>
-            Send envelope
+            {tr("Send envelope")}
           </ShellButton>
         </div>
       </section>
@@ -489,7 +539,9 @@ export function ReviewShell({
         <SendConfirmationDialog
           deadlineDays={deadlineDays}
           errorMessage={sendPhase === "error" ? sendError : null}
-          firstSignerName={firstSigner?.name ?? "Signer 1"}
+          firstSignerName={
+            firstSigner?.name ?? tr("Signer {order}", { order: 1 })
+          }
           isSending={sendPhase === "sending"}
           onCancel={closeConfirmation}
           onConfirm={handleConfirmSend}
@@ -547,21 +599,34 @@ function SendConfirmationDialog({
       <DialogContent className="max-w-md sm:p-8" showCloseButton={false}>
         <div className="space-y-4">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Send this envelope?</DialogTitle>
+            <DialogTitle>{tr("Send this envelope?")}</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-3 text-sm leading-6 text-(--secondary)">
                 <p>
-                  &quot;{title}&quot; will be sent to {signerCount}{" "}
-                  {signerCount === 1 ? "signer" : "signers"}.{" "}
                   {signerCount === 1
-                    ? `${firstSignerName} will be notified immediately.`
-                    : `The first signer (${firstSignerName}) will be notified immediately.`}{" "}
-                  The request expires in {deadlineDays} days.
+                    ? tr('"{title}" will be sent to 1 signer.', { title })
+                    : tr('"{title}" will be sent to {count} signers.', {
+                        count: signerCount,
+                        title,
+                      })}{" "}
+                  {signerCount === 1
+                    ? tr("{name} will be notified immediately.", {
+                        name: firstSignerName,
+                      })
+                    : tr(
+                        "The first signer ({name}) will be notified immediately.",
+                        { name: firstSignerName },
+                      )}{" "}
+                  {tr("The request expires in {count} days.", {
+                    count: deadlineDays,
+                  })}
                 </p>
                 {signatureType ? (
                   <p>
-                    Signature type: {signatureType}. It cannot be changed once
-                    the envelope is sent.
+                    {tr(
+                      "Signature type: {type}. It cannot be changed once the envelope is sent.",
+                      { type: signatureType },
+                    )}
                   </p>
                 ) : null}
               </div>
@@ -580,16 +645,16 @@ function SendConfirmationDialog({
                 }
               />
               <span className="text-sm leading-6 text-(--secondary)">
-                By sending, you confirm this document is an ordinary business
-                agreement and not a will, court order, legally required consumer
-                disclosure, or other{" "}
+                {tr(
+                  "By sending, you confirm this document is an ordinary business agreement and not a will, court order, legally required consumer disclosure, or other",
+                )}{" "}
                 <a
                   className="font-semibold text-(--accent-ink) underline decoration-[rgb(var(--accent-rgb)/0.35)] underline-offset-4"
                   href={PERMITTED_USE_PATH}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  document that cannot be signed electronically
+                  {tr("document that cannot be signed electronically")}
                 </a>
                 .
               </span>
@@ -608,14 +673,14 @@ function SendConfirmationDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton
               disabled={!isPermittedUseConfirmed}
               loading={isSending}
               onClick={onConfirm}
             >
-              {isSending ? "Sending..." : "Send now"}
+              {isSending ? tr("Sending...") : tr("Send now")}
             </ShellButton>
           </div>
         </div>
@@ -628,8 +693,10 @@ function formatSignerFieldSummary(fields: readonly ReviewFieldSummaryLabel[]) {
   const fieldCount = fields.length;
 
   if (fieldCount === 0) {
-    return "No fields placed yet (0 fields)";
+    return tr("No fields placed yet (0 fields)");
   }
 
-  return `(${fieldCount} field${fieldCount === 1 ? "" : "s"})`;
+  return fieldCount === 1
+    ? tr("({count} field)", { count: 1 })
+    : tr("({count} fields)", { count: fieldCount });
 }

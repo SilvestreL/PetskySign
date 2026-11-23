@@ -1,8 +1,13 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useRef,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import { type FieldResizeHandle } from "@/lib/utils/pdf-coords";
+import { tr } from "@/lib/petsky/locale";
 
 const dragThresholdPx = 4;
 const compactFieldHeightThreshold = 0.045;
@@ -159,7 +164,8 @@ export function InteractivePlacedField({
       onInteractionChange?.(true);
     }
 
-    const scaledDeltaX = (deltaClientX / gesture.viewportWidth) * coordinateScale;
+    const scaledDeltaX =
+      (deltaClientX / gesture.viewportWidth) * coordinateScale;
     const scaledDeltaY =
       (deltaClientY / gesture.viewportHeight) * coordinateScale;
 
@@ -238,11 +244,16 @@ export function InteractivePlacedField({
       {isSelected
         ? resizeHandles.map((handle) => (
             <button
-              aria-label={`Resize ${label} field from ${handle.corner}`}
+              aria-label={tr("Resize {label} field from {corner}", {
+                corner: tr(handle.corner),
+                label,
+              })}
               className={`absolute ${handle.positionClassName} ${handle.cursorClassName} z-1 size-4 rounded-full bg-white shadow-[0_4px_10px_rgba(28,29,43,0.18)]`}
               key={handle.corner}
               onPointerCancel={endGesture}
-              onPointerDown={(event) => beginGesture(event, "resize", handle.corner)}
+              onPointerDown={(event) =>
+                beginGesture(event, "resize", handle.corner)
+              }
               onPointerMove={handlePointerMove}
               onPointerUp={endGesture}
               style={{

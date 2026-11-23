@@ -12,13 +12,14 @@ import {
   normalizeBrandColor,
 } from "@/lib/brand-color";
 import { LOGO_CONTENT_TYPES, MAX_LOGO_BYTES } from "@/lib/branding";
+import { tr } from "@/lib/petsky/locale";
 
 // The install's own logo and color, on the Organization tab in Settings.
 //
 // The logo is saved as soon as it is chosen. The color is part of the form
 // around this panel and is saved with it.
 
-const GENERIC_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const GENERIC_ERROR_MESSAGE = tr("Something went wrong. Please try again.");
 
 type BrandingPanelProps = {
   brandColor: string;
@@ -90,12 +91,12 @@ export function BrandingPanel({
     }
 
     if (!(LOGO_CONTENT_TYPES as readonly string[]).includes(file.type)) {
-      setLogoError("The logo must be a PNG, JPEG or WebP image.");
+      setLogoError(tr("The logo must be a PNG, JPEG or WebP image."));
       return;
     }
 
     if (file.size > MAX_LOGO_BYTES) {
-      setLogoError("The logo must be 512 KB or smaller.");
+      setLogoError(tr("The logo must be 512 KB or smaller."));
       return;
     }
 
@@ -108,33 +109,33 @@ export function BrandingPanel({
     <div className="space-y-5 border-t border-(--border) pt-8">
       <div className="space-y-2">
         <h3 className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-          Logo and color
+          {tr("Logo and color")}
         </h3>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Optional. Your logo goes in the header of this site, on the pages
-          signers see and at the top of emails. Your color is used for buttons
-          and links.
+          {tr(
+            "Optional. Your logo goes in the header of this site, on the pages signers see and at the top of emails. Your color is used for buttons and links.",
+          )}
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="well space-y-4 p-4">
           <p className="text-[0.8125rem] font-semibold text-(--secondary)">
-            Logo
+            {tr("Logo")}
           </p>
           <div className="flex min-h-16 items-center rounded-xl bg-(--paper) px-4 py-3">
             {logoUrl ? (
               <BrandLogo src={logoUrl} />
             ) : (
               <span className="text-sm leading-6 text-(--tertiary)">
-                No logo yet. The header shows your organization&rsquo;s name.
+                {tr("No logo yet. The header shows your organization's name.")}
               </span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
             <input
               accept={LOGO_CONTENT_TYPES.join(",")}
-              aria-label="Logo image"
+              aria-label={tr("Logo image")}
               className="hidden"
               disabled={busy}
               onChange={handleFileChosen}
@@ -149,10 +150,10 @@ export function BrandingPanel({
               type="button"
             >
               {logoBusy === "uploading"
-                ? "Uploading..."
+                ? tr("Uploading...")
                 : logoUrl
-                  ? "Replace logo"
-                  : "Upload a logo"}
+                  ? tr("Replace logo")
+                  : tr("Upload a logo")}
             </button>
             {logoUrl ? (
               <button
@@ -161,7 +162,9 @@ export function BrandingPanel({
                 onClick={() => void sendLogo(null)}
                 type="button"
               >
-                {logoBusy === "removing" ? "Removing..." : "Remove logo"}
+                {logoBusy === "removing"
+                  ? tr("Removing...")
+                  : tr("Remove logo")}
               </button>
             ) : null}
           </div>
@@ -171,8 +174,9 @@ export function BrandingPanel({
             </p>
           ) : (
             <p className="text-xs leading-5 text-(--tertiary)">
-              PNG, JPEG or WebP, up to 512 KB. A wide logo on a transparent
-              background works best. It is saved as soon as you choose it.
+              {tr(
+                "PNG, JPEG or WebP, up to 512 KB. A wide logo on a transparent background works best. It is saved as soon as you choose it.",
+              )}
             </p>
           )}
         </div>
@@ -182,11 +186,11 @@ export function BrandingPanel({
             className="block text-[0.8125rem] font-semibold text-(--secondary)"
             htmlFor="brand-color"
           >
-            Brand color
+            {tr("Brand color")}
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <input
-              aria-label="Color picker"
+              aria-label={tr("Color picker")}
               className="size-12 shrink-0 cursor-pointer rounded-xl border-[1.5px] border-(--border-strong) bg-(--paper) p-1 disabled:cursor-not-allowed"
               disabled={disabled}
               onChange={(event) => onBrandColorChange(event.target.value)}
@@ -215,7 +219,7 @@ export function BrandingPanel({
                 onClick={() => onBrandColorChange("")}
                 type="button"
               >
-                Use the default
+                {tr("Use the default")}
               </button>
             ) : null}
           </div>
@@ -226,11 +230,11 @@ export function BrandingPanel({
             style={brandPaletteVariables(palette) as CSSProperties}
           >
             <span className="inline-flex min-h-9 items-center rounded-[0.75rem] bg-(--accent) px-3.5 text-[0.8125rem] font-bold text-white">
-              Button
+              {tr("Button")}
             </span>
-            <span className="pill pill-accent">Status</span>
+            <span className="pill pill-accent">{tr("Status")}</span>
             <span className="text-[0.8125rem] font-semibold text-(--accent-ink) underline decoration-[rgb(var(--accent-rgb)/0.35)] underline-offset-4">
-              Link
+              {tr("Link")}
             </span>
           </div>
           {brandColorError ? (
@@ -247,8 +251,12 @@ export function BrandingPanel({
               id="brand-color-description"
             >
               {darkened
-                ? "This color is too light for white text to be read on it, so a darker shade of it is used."
-                : "Six letters and digits, such as #1a73e8. Leave empty for the default. Saved with the button below."}
+                ? tr(
+                    "This color is too light for white text to be read on it, so a darker shade of it is used.",
+                  )
+                : tr(
+                    "Six letters and digits, such as #1a73e8. Leave empty for the default. Saved with the button below.",
+                  )}
             </p>
           )}
         </div>

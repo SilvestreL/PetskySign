@@ -28,7 +28,7 @@ import type {
   EnvelopeDetailData,
   EnvelopeDetailTimelineItem,
 } from "@/lib/envelopes";
-import { formatReminderInterval } from "@/lib/services/reminders";
+import { tr } from "@/lib/petsky/locale";
 import {
   DEFAULT_ENVELOPE_DEADLINE_DAYS,
   ENVELOPE_DEADLINE_DAY_OPTIONS,
@@ -36,6 +36,22 @@ import {
 } from "@/lib/types/domain";
 import { getSignerPalette } from "./signer-palette";
 import { displayEmail } from "@/lib/petsky/placeholder-email";
+
+// The reminder choices, in the app's language (formatReminderInterval in
+// lib/services/reminders.ts stays in English for the server).
+function reminderIntervalLabel(intervalDays: number | null): string {
+  if (intervalDays === null) {
+    return tr("Off");
+  }
+
+  if (intervalDays === 1) {
+    return tr("Every day");
+  }
+
+  return intervalDays === 7
+    ? tr("Every week")
+    : tr("Every {count} days", { count: intervalDays });
+}
 
 type EnvelopeDetailShellProps = {
   envelopeId: string;
@@ -89,11 +105,11 @@ const statusPillClasses: Record<EnvelopeStatus, string> = {
 };
 
 const statusLabelMap: Record<EnvelopeStatus, string> = {
-  completed: "Completed",
-  declined: "Declined",
-  draft: "Draft",
-  sent: "Sent",
-  voided: "Voided",
+  completed: tr("Completed"),
+  declined: tr("Declined"),
+  draft: tr("Draft"),
+  sent: tr("Sent"),
+  voided: tr("Voided"),
 };
 
 const signerStatusPillClasses: Record<SignerStatus, string> = {
@@ -104,10 +120,10 @@ const signerStatusPillClasses: Record<SignerStatus, string> = {
 };
 
 const signerStatusLabelMap: Record<SignerStatus, string> = {
-  declined: "Declined",
-  pending: "Pending",
-  signed: "Signed",
-  waiting: "Waiting",
+  declined: tr("Declined"),
+  pending: tr("Pending"),
+  signed: tr("Signed"),
+  waiting: tr("Waiting"),
 };
 
 const signerStatusIcons: Record<SignerStatus, LucideIcon> = {
@@ -152,13 +168,13 @@ export function EnvelopeDetailShell({
   if (initialState === "error") {
     return (
       <StatusPanel
-        description="Couldn't load this envelope. Please try again."
+        description={tr("Couldn't load this envelope. Please try again.")}
         footer={
           <ShellButton onClick={handleRetry} variant="secondary">
-            Retry
+            {tr("Retry")}
           </ShellButton>
         }
-        title="Couldn't load this envelope"
+        title={tr("Couldn't load this envelope")}
         tone="error"
       />
     );
@@ -167,10 +183,12 @@ export function EnvelopeDetailShell({
   if (initialState === "not-found") {
     return (
       <StatusPanel
-        action={{ href: "/dashboard", label: "Back to documents" }}
-        description="We couldn't find this envelope, or you no longer have access to it."
-        eyebrow="Unavailable"
-        title="This envelope is unavailable"
+        action={{ href: "/dashboard", label: tr("Back to documents") }}
+        description={tr(
+          "We couldn't find this envelope, or you no longer have access to it.",
+        )}
+        eyebrow={tr("Unavailable")}
+        title={tr("This envelope is unavailable")}
         tone="error"
       />
     );
@@ -179,13 +197,13 @@ export function EnvelopeDetailShell({
   if (!record) {
     return (
       <StatusPanel
-        description="Couldn't load this envelope. Please try again."
+        description={tr("Couldn't load this envelope. Please try again.")}
         footer={
           <ShellButton onClick={handleRetry} variant="secondary">
-            Retry
+            {tr("Retry")}
           </ShellButton>
         }
-        title="Couldn't load this envelope"
+        title={tr("Couldn't load this envelope")}
         tone="error"
       />
     );
@@ -207,20 +225,26 @@ export function EnvelopeDetailShell({
     !manualReminderState.canSend;
   const reminderHelperText =
     activeRecord.status === "sent" && manualReminderState?.nextAvailableAtLabel
-      ? `You can send another reminder after ${manualReminderState.nextAvailableAtLabel}.`
+      ? tr("You can send another reminder after {time}.", {
+          time: manualReminderState.nextAvailableAtLabel,
+        })
       : null;
   const deadlineText = !deadline
     ? null
     : isExpired
-      ? `Expired ${deadline.expiresAtLabel}. Nobody can sign until you set a new deadline.`
+      ? tr("Expired {time}. Nobody can sign until you set a new deadline.", {
+          time: deadline.expiresAtLabel ?? "",
+        })
       : deadline.expiresAtLabel
-        ? `Expires ${deadline.expiresAtLabel}.`
-        : "No deadline. Each signing link lasts seven days.";
+        ? tr("Expires {time}.", { time: deadline.expiresAtLabel })
+        : tr("No deadline. Each signing link lasts seven days.");
   const reminderIntervalDays = record.reminderIntervalDays ?? null;
   const remindersText =
     reminderIntervalDays === null
-      ? "Automatic reminders are off."
-      : `Automatic reminders: ${formatReminderInterval(reminderIntervalDays).toLowerCase()}.`;
+      ? tr("Automatic reminders are off.")
+      : tr("Automatic reminders: {interval}.", {
+          interval: reminderIntervalLabel(reminderIntervalDays).toLowerCase(),
+        });
   const activeSigner =
     activeRecord.status === "sent"
       ? activeRecord.signers.find((signer) => signer.status === "waiting")
@@ -260,7 +284,9 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to send a reminder right now.");
+      setActionError(
+        payload?.error ?? tr("Unable to send a reminder right now."),
+      );
     } finally {
       setIsSendingReminder(false);
     }
@@ -285,9 +311,9 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to change the deadline.");
+      setActionError(payload?.error ?? tr("Unable to change the deadline."));
     } catch {
-      setActionError("Unable to change the deadline.");
+      setActionError(tr("Unable to change the deadline."));
     } finally {
       setIsChangingDeadline(false);
     }
@@ -322,9 +348,9 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to correct this signer.");
+      setActionError(payload?.error ?? tr("Unable to correct this signer."));
     } catch {
-      setActionError("Unable to correct this signer.");
+      setActionError(tr("Unable to correct this signer."));
     } finally {
       setIsCorrectingSigner(false);
     }
@@ -349,9 +375,9 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to change the reminders.");
+      setActionError(payload?.error ?? tr("Unable to change the reminders."));
     } catch {
-      setActionError("Unable to change the reminders.");
+      setActionError(tr("Unable to change the reminders."));
     } finally {
       setIsChangingReminders(false);
     }
@@ -382,9 +408,9 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to copy this envelope.");
+      setActionError(payload?.error ?? tr("Unable to copy this envelope."));
     } catch {
-      setActionError("Unable to copy this envelope.");
+      setActionError(tr("Unable to copy this envelope."));
     } finally {
       setIsCopyingDraft(false);
     }
@@ -404,7 +430,7 @@ export function EnvelopeDetailShell({
       } | null;
 
       if (!response.ok) {
-        setActionError(payload?.error ?? "Unable to delete this draft.");
+        setActionError(payload?.error ?? tr("Unable to delete this draft."));
         return;
       }
 
@@ -442,7 +468,7 @@ export function EnvelopeDetailShell({
         return;
       }
 
-      setActionError(payload?.error ?? "Unable to void this envelope.");
+      setActionError(payload?.error ?? tr("Unable to void this envelope."));
     } finally {
       setIsVoidingEnvelope(false);
     }
@@ -455,7 +481,7 @@ export function EnvelopeDetailShell({
           className="inline-flex items-center text-sm font-semibold text-(--secondary) transition hover:text-(--accent-ink)"
           href="/dashboard"
         >
-          ← Documents
+          {tr("← Documents")}
         </Link>
 
         <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -484,10 +510,12 @@ export function EnvelopeDetailShell({
                       : statusPillClasses[activeRecord.status]
                   }`}
                 >
-                  {isExpired ? "Expired" : statusLabelMap[activeRecord.status]}
+                  {isExpired
+                    ? tr("Expired")
+                    : statusLabelMap[activeRecord.status]}
                 </span>
                 <p className="text-sm text-(--secondary)">
-                  Created {activeRecord.createdAtLabel}
+                  {tr("Created {date}", { date: activeRecord.createdAtLabel })}
                 </p>
                 {record.signatureTypeLabel ? (
                   <span className="pill pill-neutral">
@@ -505,10 +533,10 @@ export function EnvelopeDetailShell({
                   onClick={() => setActiveModal("delete-draft")}
                   variant="secondary"
                 >
-                  Delete draft
+                  {tr("Delete draft")}
                 </ShellButton>
                 <ShellButton href={`/envelopes/${envelopeId}/prepare`}>
-                  Continue editing
+                  {tr("Continue editing")}
                 </ShellButton>
               </>
             ) : null}
@@ -519,14 +547,14 @@ export function EnvelopeDetailShell({
                   onClick={() => setActiveModal("void-envelope")}
                   variant="secondary"
                 >
-                  Void envelope
+                  {tr("Void envelope")}
                 </ShellButton>
                 <ShellButton
                   disabled={!activeSigner || reminderLimited}
                   loading={isSendingReminder}
                   onClick={handleSendReminder}
                 >
-                  Send reminder
+                  {tr("Send reminder")}
                 </ShellButton>
               </>
             ) : null}
@@ -537,7 +565,7 @@ export function EnvelopeDetailShell({
                   onClick={() => handleDownload("evidence")}
                   variant="secondary"
                 >
-                  Download certificate
+                  {tr("Download certificate")}
                 </ShellButton>
                 <ShellButton onClick={() => handleDownload("signed")}>
                   <DownloadIcon
@@ -545,7 +573,7 @@ export function EnvelopeDetailShell({
                     className="size-[1.125rem]"
                     strokeWidth={2.2}
                   />
-                  Download signed PDF
+                  {tr("Download signed PDF")}
                 </ShellButton>
               </>
             ) : null}
@@ -556,7 +584,7 @@ export function EnvelopeDetailShell({
                 onClick={() => handleDownload("evidence")}
                 variant="secondary"
               >
-                Download certificate
+                {tr("Download certificate")}
               </ShellButton>
             ) : null}
 
@@ -569,7 +597,7 @@ export function EnvelopeDetailShell({
                   }}
                   variant="secondary"
                 >
-                  Copy to new draft
+                  {tr("Copy to new draft")}
                 </ShellButton>
                 <ShellButton
                   onClick={() =>
@@ -581,7 +609,7 @@ export function EnvelopeDetailShell({
                   }
                   variant="secondary"
                 >
-                  Export audit trail
+                  {tr("Export audit trail")}
                 </ShellButton>
               </>
             ) : null}
@@ -615,7 +643,7 @@ export function EnvelopeDetailShell({
               }}
               type="button"
             >
-              {isExpired ? "Set a new deadline" : "Change deadline"}
+              {isExpired ? tr("Set a new deadline") : tr("Change deadline")}
             </button>
           </div>
         ) : null}
@@ -633,7 +661,7 @@ export function EnvelopeDetailShell({
               }}
               type="button"
             >
-              Change reminders
+              {tr("Change reminders")}
             </button>
           </div>
         ) : null}
@@ -645,12 +673,16 @@ export function EnvelopeDetailShell({
             }`}
             role="status"
           >
-            <p>Saved as the template &ldquo;{savedTemplateName}&rdquo;.</p>
+            <p>
+              {tr("Saved as the template “{name}”.", {
+                name: savedTemplateName,
+              })}
+            </p>
             <Link
               className="shrink-0 underline underline-offset-4"
               href="/templates"
             >
-              View templates
+              {tr("View templates")}
             </Link>
           </div>
         ) : activeRecord.signers.length > 0 ? (
@@ -660,8 +692,9 @@ export function EnvelopeDetailShell({
             }`}
           >
             <p className="text-sm leading-6 text-(--secondary)">
-              Send this kind of document often? Keep its fields and signing
-              order as a template.
+              {tr(
+                "Send this kind of document often? Keep its fields and signing order as a template.",
+              )}
             </p>
             <button
               className="btn-quiet shrink-0"
@@ -671,7 +704,7 @@ export function EnvelopeDetailShell({
               }}
               type="button"
             >
-              Save as template
+              {tr("Save as template")}
             </button>
           </div>
         ) : null}
@@ -690,9 +723,11 @@ export function EnvelopeDetailShell({
       >
         <article className="panel p-5 sm:p-7">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-extrabold text-(--fg)">Signers</h2>
+            <h2 className="text-lg font-extrabold text-(--fg)">
+              {tr("Signers")}
+            </h2>
             <span className="pill pill-neutral">
-              {activeRecord.signers.length} total
+              {tr("{count} total", { count: activeRecord.signers.length })}
             </span>
           </div>
 
@@ -763,7 +798,7 @@ export function EnvelopeDetailShell({
                                 className="size-3.5"
                                 strokeWidth={2.4}
                               />
-                              Change
+                              {tr("Change")}
                             </button>
                           ) : null}
                         </div>
@@ -782,12 +817,12 @@ export function EnvelopeDetailShell({
           {record.copyRecipients && record.copyRecipients.length > 0 ? (
             <div className="mt-6">
               <h3 className="text-[0.9375rem] font-extrabold text-(--fg)">
-                Receives a copy
+                {tr("Receives a copy")}
               </h3>
               <p className="mt-1 text-sm leading-6 text-(--secondary)">
                 {activeRecord.status === "completed"
-                  ? "Sent the finished document and its certificate."
-                  : "Gets the finished document once everyone has signed."}
+                  ? tr("Sent the finished document and its certificate.")
+                  : tr("Gets the finished document once everyone has signed.")}
               </p>
               <ul className="mt-3 space-y-2">
                 {record.copyRecipients.map((recipient) => (
@@ -807,9 +842,11 @@ export function EnvelopeDetailShell({
 
         <article className="panel p-5 sm:p-7">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-extrabold text-(--fg)">Timeline</h2>
+            <h2 className="text-lg font-extrabold text-(--fg)">
+              {tr("Timeline")}
+            </h2>
             <span className="pill pill-neutral">
-              {activeRecord.timeline.length} events
+              {tr("{count} events", { count: activeRecord.timeline.length })}
             </span>
           </div>
 
@@ -898,37 +935,43 @@ export function EnvelopeDetailShell({
 
       {activeModal === "delete-draft" ? (
         <ConfirmationDialog
-          confirmLabel="Delete draft"
+          confirmLabel={tr("Delete draft")}
           description={[
-            "This draft has not been sent yet.",
-            "Deleting it will permanently remove the draft and its placed fields.",
+            tr("This draft has not been sent yet."),
+            tr(
+              "Deleting it will permanently remove the draft and its placed fields.",
+            ),
           ]}
           errorMessage={actionError}
           onCancel={() => setActiveModal(null)}
           onConfirm={handleConfirmDeleteDraft}
           processing={isDeletingDraft}
-          title="Delete this draft?"
+          title={tr("Delete this draft?")}
         />
       ) : null}
 
       {activeModal === "void-envelope" ? (
         <ConfirmationDialog
-          confirmLabel="Void envelope"
+          confirmLabel={tr("Void envelope")}
           description={[
-            "This will cancel the signing process.",
-            "Notified signers will be informed that the envelope has been voided.",
-            "This action cannot be undone.",
+            tr("This will cancel the signing process."),
+            tr(
+              "Notified signers will be informed that the envelope has been voided.",
+            ),
+            tr("This action cannot be undone."),
           ]}
           confirmDisabled={record.part11 && voidReason.trim().length === 0}
           errorMessage={actionError}
           onCancel={() => setActiveModal(null)}
           onConfirm={handleConfirmVoidEnvelope}
           processing={isVoidingEnvelope}
-          title="Void this envelope?"
+          title={tr("Void this envelope?")}
         >
           <label className="grid gap-2 text-sm">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              {record.part11 ? "Reason (required)" : "Reason (optional)"}
+              {record.part11
+                ? tr("Reason (required)")
+                : tr("Reason (optional)")}
             </span>
             <Textarea
               disabled={isVoidingEnvelope}
@@ -938,7 +981,7 @@ export function EnvelopeDetailShell({
               value={voidReason}
             />
             <span className="text-xs leading-5 text-(--tertiary)">
-              Kept in the envelope&apos;s audit trail.
+              {tr("Kept in the envelope's audit trail.")}
             </span>
           </label>
         </ConfirmationDialog>
@@ -972,19 +1015,22 @@ function CopyDraftDialog({
       <DialogContent className="max-w-md sm:p-8" showCloseButton={false}>
         <div className="space-y-4">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Copy to a new draft</DialogTitle>
+            <DialogTitle>{tr("Copy to a new draft")}</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                 <p>
-                  This starts a new draft with the same document, the same
-                  people and the same fields. Nothing that was filled in is
-                  copied.
+                  {tr(
+                    "This starts a new draft with the same document, the same people and the same fields. Nothing that was filled in is copied.",
+                  )}
                 </p>
                 <p>
-                  Access codes are not copied: they are stored hashed, so they
-                  cannot be brought across. You can set new ones before sending.
+                  {tr(
+                    "Access codes are not copied: they are stored hashed, so they cannot be brought across. You can set new ones before sending.",
+                  )}
                 </p>
-                <p>Nobody is emailed, and this envelope is left as it is.</p>
+                <p>
+                  {tr("Nobody is emailed, and this envelope is left as it is.")}
+                </p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -1001,10 +1047,10 @@ function CopyDraftDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton loading={processing} onClick={onConfirm}>
-              {processing ? "Copying..." : "Copy to new draft"}
+              {processing ? tr("Copying...") : tr("Copy to new draft")}
             </ShellButton>
           </div>
         </div>
@@ -1043,15 +1089,19 @@ function DeadlineDialog({
         <div className="space-y-4">
           <DialogHeader className="space-y-3">
             <DialogTitle>
-              {expired ? "Set a new deadline" : "Change the deadline"}
+              {expired ? tr("Set a new deadline") : tr("Change the deadline")}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                 <p>
-                  The new deadline counts from now.{" "}
+                  {tr("The new deadline counts from now.")}{" "}
                   {expired
-                    ? "The signing link that was already sent will work again."
-                    : "The signing link that was already sent keeps working until then."}
+                    ? tr(
+                        "The signing link that was already sent will work again.",
+                      )
+                    : tr(
+                        "The signing link that was already sent keeps working until then.",
+                      )}
                 </p>
               </div>
             </DialogDescription>
@@ -1059,7 +1109,7 @@ function DeadlineDialog({
 
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Signing deadline
+              {tr("Signing deadline")}
             </span>
             <select
               autoFocus
@@ -1070,7 +1120,7 @@ function DeadlineDialog({
             >
               {ENVELOPE_DEADLINE_DAY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
-                  {option} days from now
+                  {tr("{count} days from now", { count: option })}
                 </option>
               ))}
             </select>
@@ -1088,10 +1138,10 @@ function DeadlineDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton loading={processing} onClick={() => onConfirm(days)}>
-              {processing ? "Saving..." : "Save deadline"}
+              {processing ? tr("Saving...") : tr("Save deadline")}
             </ShellButton>
           </div>
         </div>
@@ -1138,13 +1188,13 @@ function RemindersDialog({
       <DialogContent className="max-w-md sm:p-8" showCloseButton={false}>
         <div className="space-y-4">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Automatic reminders</DialogTitle>
+            <DialogTitle>{tr("Automatic reminders")}</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                 <p>
-                  A reminder goes to the signer whose turn it is when they have
-                  not heard from you for this long. Reminders stop once everyone
-                  has signed or the deadline passes.
+                  {tr(
+                    "A reminder goes to the signer whose turn it is when they have not heard from you for this long. Reminders stop once everyone has signed or the deadline passes.",
+                  )}
                 </p>
               </div>
             </DialogDescription>
@@ -1152,7 +1202,7 @@ function RemindersDialog({
 
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Send a reminder
+              {tr("Send a reminder")}
             </span>
             <select
               autoFocus
@@ -1167,10 +1217,10 @@ function RemindersDialog({
               }
               value={intervalDays ?? "off"}
             >
-              <option value="off">{formatReminderInterval(null)}</option>
+              <option value="off">{reminderIntervalLabel(null)}</option>
               {options.map((option) => (
                 <option key={option} value={option}>
-                  {formatReminderInterval(option)}
+                  {reminderIntervalLabel(option)}
                 </option>
               ))}
             </select>
@@ -1188,13 +1238,13 @@ function RemindersDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton
               loading={processing}
               onClick={() => onConfirm(intervalDays)}
             >
-              {processing ? "Saving..." : "Save reminders"}
+              {processing ? tr("Saving...") : tr("Save reminders")}
             </ShellButton>
           </div>
         </div>
@@ -1235,13 +1285,13 @@ function CorrectSignerDialog({
       <DialogContent className="max-w-md sm:p-8" showCloseButton={false}>
         <div className="space-y-4">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Correct this signer</DialogTitle>
+            <DialogTitle>{tr("Correct this signer")}</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm leading-6 text-(--secondary)">
                 <p>
-                  The signing link already sent to this person will stop
-                  working. If it is their turn, a new invitation goes to the
-                  corrected address.
+                  {tr(
+                    "The signing link already sent to this person will stop working. If it is their turn, a new invitation goes to the corrected address.",
+                  )}
                 </p>
               </div>
             </DialogDescription>
@@ -1249,7 +1299,7 @@ function CorrectSignerDialog({
 
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Name
+              {tr("Name")}
             </span>
             <input
               autoFocus
@@ -1262,7 +1312,7 @@ function CorrectSignerDialog({
 
           <label className="grid gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Email
+              {tr("Email")}
             </span>
             <input
               className="field-input"
@@ -1285,13 +1335,13 @@ function CorrectSignerDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton
               loading={processing}
               onClick={() => onConfirm({ email: nextEmail, name: nextName })}
             >
-              {processing ? "Saving..." : "Save"}
+              {processing ? tr("Saving...") : tr("Save")}
             </ShellButton>
           </div>
         </div>
@@ -1359,7 +1409,7 @@ function ConfirmationDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton
               disabled={confirmDisabled}

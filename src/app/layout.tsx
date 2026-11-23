@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 import { appLocale, tr } from "@/lib/petsky/locale";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+// Inter, the Petsky typeface, from files in the repo (OFL license beside
+// them): the build does not depend on reaching Google Fonts.
+const inter = localFont({
   display: "swap",
-  subsets: ["latin"],
+  src: [
+    {
+      path: "./fonts/inter-latin-wght-normal.woff2",
+      style: "normal",
+      weight: "400 700",
+    },
+    {
+      path: "./fonts/inter-latin-wght-italic.woff2",
+      style: "italic",
+      weight: "400 700",
+    },
+  ],
   variable: "--font-ui",
-  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang={appLocale() === "pt-BR" ? "pt-BR" : "en"}>
-      <body className={`${plusJakartaSans.variable} antialiased`}>
+      <body className={`${inter.variable} antialiased`}>
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>

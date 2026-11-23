@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ShellButton } from "@/components/shared/form-shell";
 import type { UpdateStatus } from "@/lib/software-update";
+import { tr } from "@/lib/petsky/locale";
 
 // The SignuDoc section of Settings, for the administrator: the version this
 // install runs, a button that asks GitHub whether a newer one is out, and
@@ -35,14 +36,14 @@ export function UpdatesPanel({
       if (!response.ok || !payload || "error" in payload) {
         setError(
           (payload && "error" in payload && payload.error) ||
-            "Updates could not be checked. Please try again.",
+            tr("Updates could not be checked. Please try again."),
         );
         return;
       }
 
       setStatus(payload);
     } catch {
-      setError("Updates could not be checked. Please try again.");
+      setError(tr("Updates could not be checked. Please try again."));
     } finally {
       setIsChecking(false);
     }
@@ -57,12 +58,12 @@ export function UpdatesPanel({
     >
       <div className="space-y-6">
         <div className="space-y-2">
-          <p className="section-eyebrow">Administrator</p>
+          <p className="section-eyebrow">{tr("Administrator")}</p>
           <h2 className="text-2xl font-extrabold tracking-[-0.03em] text-(--fg)">
-            SignuDoc
+            {tr("SignuDoc")}
           </h2>
           <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-            This site runs SignuDoc version{" "}
+            {tr("This site runs SignuDoc version")}{" "}
             <span
               className="font-bold text-(--fg)"
               data-testid="running-version"
@@ -72,17 +73,18 @@ export function UpdatesPanel({
             {status.commit ? (
               <>
                 {" "}
-                (commit <code className="text-(--fg)">{status.commit}</code>)
+                {tr("(commit")}{" "}
+                <code className="text-(--fg)">{status.commit}</code>)
               </>
             ) : null}
-            . New versions are published on{" "}
+            {tr(". New versions are published on")}{" "}
             <a
               className={linkClassName}
               href={status.releasesUrl}
               rel="noreferrer"
               target="_blank"
             >
-              GitHub
+              {tr("GitHub")}
             </a>
             .
           </p>
@@ -94,7 +96,7 @@ export function UpdatesPanel({
           onClick={checkNow}
           variant="secondary"
         >
-          {isChecking ? "Checking..." : "Check for updates"}
+          {isChecking ? tr("Checking...") : tr("Check for updates")}
         </ShellButton>
 
         {error ? (
@@ -108,13 +110,13 @@ export function UpdatesPanel({
             check.updateAvailable ? (
               <div className="space-y-4" role="status">
                 <p className="notice notice-accent">
-                  <strong>{check.latest.name}</strong> is out. This site runs{" "}
-                  {check.current}.
+                  <strong>{check.latest.name}</strong>{" "}
+                  {tr("is out. This site runs")} {check.current}.
                 </p>
                 {check.latest.notes ? (
                   <div className="space-y-2">
                     <h3 className="text-base font-extrabold text-(--fg)">
-                      What&apos;s new
+                      {tr("What's new")}
                     </h3>
                     <div className="max-h-80 space-y-1 overflow-y-auto rounded-2xl bg-(--surface) px-5 py-4 text-sm leading-6 text-(--secondary)">
                       <ReleaseNotes notes={check.latest.notes} />
@@ -127,13 +129,13 @@ export function UpdatesPanel({
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Read the release on GitHub
+                  {tr("Read the release on GitHub")}
                 </a>
               </div>
             ) : (
               <p className="notice notice-success" role="status">
-                You are up to date. {check.latest.version} is the latest
-                release.
+                {tr("You are up to date.")} {check.latest.version}{" "}
+                {tr("is the latest release.")}
               </p>
             )
           ) : (
@@ -145,7 +147,7 @@ export function UpdatesPanel({
                 rel="noreferrer"
                 target="_blank"
               >
-                See the releases
+                {tr("See the releases")}
               </a>
             </p>
           )
@@ -199,13 +201,13 @@ function HowToUpdate({ status }: { status: UpdateStatus }) {
   return (
     <div className="space-y-3 border-t border-(--border) pt-6">
       <h3 className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-        How to update
+        {tr("How to update")}
       </h3>
       {repository && !repository.isUpstream ? (
         <>
           <ol className="max-w-2xl list-decimal space-y-2 pl-5 text-sm leading-6 text-(--secondary)">
             <li>
-              In your repository{" "}
+              {tr("In your repository")}{" "}
               <a
                 className={linkClassName}
                 href={repository.url}
@@ -214,18 +216,19 @@ function HowToUpdate({ status }: { status: UpdateStatus }) {
               >
                 {repository.owner}/{repository.slug}
               </a>
-              , open the Update SignuDoc workflow and press{" "}
-              <strong className="text-(--fg)">Run workflow</strong>. It also
-              runs by itself once a week.
+              {tr(", open the Update SignuDoc workflow and press")}{" "}
+              <strong className="text-(--fg)">{tr("Run workflow")}</strong>
+              {tr(". It also runs by itself once a week.")}
             </li>
             <li>
-              It opens a pull request with the new version, and Vercel builds a
-              preview of it. Your own changes to the code are kept; if they
-              clash with the update, the workflow says which files.
+              {tr(
+                "It opens a pull request with the new version, and Vercel builds a preview of it. Your own changes to the code are kept; if they clash with the update, the workflow says which files.",
+              )}
             </li>
             <li>
-              Merge the pull request. Vercel deploys it, and the build applies
-              any database changes the new version needs.
+              {tr(
+                "Merge the pull request. Vercel deploys it, and the build applies any database changes the new version needs.",
+              )}
             </li>
           </ol>
           <a
@@ -234,52 +237,55 @@ function HowToUpdate({ status }: { status: UpdateStatus }) {
             rel="noreferrer"
             target="_blank"
           >
-            Open the update workflow
+            {tr("Open the update workflow")}
           </a>
           <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-            No such workflow? Copies made before version 0.2.0 do not have it.{" "}
+            {tr(
+              "No such workflow? Copies made before version 0.2.0 do not have it.",
+            )}{" "}
             <a
               className={linkClassName}
               href={repository.addWorkflowUrl}
               rel="noreferrer"
               target="_blank"
             >
-              Create the file
+              {tr("Create the file")}
             </a>{" "}
-            in your repository once and paste in{" "}
+            {tr("in your repository once and paste in")}{" "}
             <a
               className={linkClassName}
               href={status.workflowSourceUrl}
               rel="noreferrer"
               target="_blank"
             >
-              its contents
+              {tr("its contents")}
             </a>
-            . The{" "}
+            {tr(". The")}{" "}
             <a
               className={linkClassName}
               href={status.docsUrl}
               rel="noreferrer"
               target="_blank"
             >
-              update guide
+              {tr("update guide")}
             </a>{" "}
-            has the details.
+            {tr("has the details.")}
           </p>
         </>
       ) : (
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Bring the new release into the repository this site is built from,
-          then deploy it. The{" "}
+          {tr(
+            "Bring the new release into the repository this site is built from, then deploy it. The",
+          )}{" "}
           <a
             className={linkClassName}
             href={status.docsUrl}
             rel="noreferrer"
             target="_blank"
           >
-            update guide
+            {tr("update guide")}
           </a>{" "}
-          shows how, including a GitHub workflow that does it for you.
+          {tr("shows how, including a GitHub workflow that does it for you.")}
         </p>
       )}
     </div>

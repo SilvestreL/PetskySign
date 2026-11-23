@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/cn";
+import { tr } from "@/lib/petsky/locale";
 
 type LandingSessionActionProps = {
   className?: string;
@@ -33,7 +34,7 @@ export function LandingSessionPrimaryAction({
       href={authenticated ? "/dashboard" : "/signup"}
       prefetch
     >
-      {authenticated ? "Go to dashboard" : "Start free"}
+      {authenticated ? tr("Go to dashboard") : tr("Start free")}
     </Link>
   );
 }
@@ -59,7 +60,7 @@ export function LandingSessionLoginAction({
       href="/login"
       prefetch
     >
-      Log in
+      {tr("Log in")}
     </Link>
   );
 }

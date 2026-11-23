@@ -2,6 +2,8 @@
 
 import { useState, type ChangeEvent } from "react";
 
+import { intlLocale, tr } from "@/lib/petsky/locale";
+
 type VerifyAnswer =
   | { match: false }
   | {
@@ -14,16 +16,16 @@ type VerifyAnswer =
       title: string;
     };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
+const dateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   dateStyle: "long",
   timeStyle: "short",
   timeZone: "UTC",
 });
 
 const STATUS_WORDS = {
-  completed: "completed",
-  declined: "declined",
-  voided: "voided",
+  completed: tr("completed"),
+  declined: tr("declined"),
+  voided: tr("voided"),
 } as const;
 
 async function sha256OfFile(file: File): Promise<string> {
@@ -73,13 +75,15 @@ export function VerifyForm() {
         (VerifyAnswer & { error?: string }) | null;
 
       if (!response.ok || !payload) {
-        setError(payload?.error ?? "The file could not be checked right now.");
+        setError(
+          payload?.error ?? tr("The file could not be checked right now."),
+        );
         return;
       }
 
       setAnswer(payload);
     } catch {
-      setError("The file could not be read.");
+      setError(tr("The file could not be read."));
     } finally {
       setIsChecking(false);
     }
@@ -89,14 +93,16 @@ export function VerifyForm() {
     <div className="space-y-6">
       <label className="block cursor-pointer rounded-[1.25rem] border-2 border-dashed border-(--border-strong) bg-(--surface) px-6 py-8 text-center transition hover:border-(--accent) hover:bg-(--accent-softer)">
         <span className="block text-[0.9375rem] font-bold text-(--fg)">
-          Choose a signed PDF or audit certificate
+          {tr("Choose a signed PDF or audit certificate")}
         </span>
         <span className="mt-1 block text-sm text-(--secondary)">
-          The file stays on your device. Only its SHA-256 fingerprint is sent.
+          {tr(
+            "The file stays on your device. Only its SHA-256 fingerprint is sent.",
+          )}
         </span>
         <input
           accept="application/pdf,.pdf"
-          aria-label="PDF to verify"
+          aria-label={tr("PDF to verify")}
           className="mx-auto mt-4 block max-w-full text-sm text-(--secondary) file:mr-3 file:min-h-10 file:cursor-pointer file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:text-sm file:font-bold file:text-white hover:file:bg-(--accent-hover)"
           // One file at a time, so a verdict cannot land on the wrong one.
           disabled={isChecking}
@@ -106,35 +112,50 @@ export function VerifyForm() {
       </label>
 
       <div aria-live="polite" className="space-y-3" role="status">
-        {isChecking ? <p>Checking {fileName}...</p> : null}
+        {isChecking ? (
+          <p>{tr("Checking {file}...", { file: fileName ?? "" })}</p>
+        ) : null}
         {error ? <p className="notice notice-danger">{error}</p> : null}
         {answer?.match === true ? (
           <div className="rounded-2xl bg-(--success-soft) px-5 py-4">
             <p className="font-bold text-(--success)">
-              This file is unchanged. It is the{" "}
               {answer.fileKind === "signed-document"
-                ? "signed document"
-                : "audit certificate"}{" "}
-              this site produced for &ldquo;{answer.title}&rdquo;.
+                ? tr(
+                    "This file is unchanged. It is the signed document this site produced for “{title}”.",
+                    { title: answer.title },
+                  )
+                : tr(
+                    "This file is unchanged. It is the audit certificate this site produced for “{title}”.",
+                    { title: answer.title },
+                  )}
             </p>
             <p className="mt-2 text-sm text-(--secondary)">
-              The envelope was {STATUS_WORDS[answer.status]}
+              {tr("The envelope was {status}", {
+                status: STATUS_WORDS[answer.status],
+              })}
               {answer.finishedAt
-                ? ` on ${dateFormatter.format(new Date(answer.finishedAt * 1000))} UTC`
+                ? tr(" on {date} UTC", {
+                    date: dateFormatter.format(
+                      new Date(answer.finishedAt * 1000),
+                    ),
+                  })
                 : ""}{" "}
-              with {answer.signerCount} signer
-              {answer.signerCount === 1 ? "" : "s"}. Envelope ID{" "}
-              {answer.envelopeId}.
+              {answer.signerCount === 1
+                ? tr("with 1 signer.")
+                : tr("with {count} signers.", {
+                    count: answer.signerCount,
+                  })}{" "}
+              {tr("Envelope ID {id}.", { id: answer.envelopeId })}
             </p>
           </div>
         ) : null}
         {answer?.match === false ? (
           <div className="rounded-2xl bg-(--danger-soft) px-5 py-4">
-            <p className="font-bold text-(--danger)">No match.</p>
+            <p className="font-bold text-(--danger)">{tr("No match.")}</p>
             <p className="mt-2 text-sm text-(--secondary)">
-              This site did not produce this exact file. It may have been
-              changed, saved again by another program, or come from somewhere
-              else. Ask the sender for the copy kept on this site.
+              {tr(
+                "This site did not produce this exact file. It may have been changed, saved again by another program, or come from somewhere else. Ask the sender for the copy kept on this site.",
+              )}
             </p>
           </div>
         ) : null}

@@ -20,16 +20,16 @@ export type BrandPalette = {
 };
 
 /** The accent the design ships with. Keep in step with globals.css. */
-export const DEFAULT_BRAND_COLOR = "#5340d6";
+export const DEFAULT_BRAND_COLOR = "#2d6fd1";
 
 export const DEFAULT_BRAND_PALETTE: BrandPalette = {
   accent: DEFAULT_BRAND_COLOR,
-  accentHover: "#4433b8",
-  accentInk: "#4433b8",
-  accentRgb: "83 64 214",
-  accentSoft: "#ece9fd",
-  accentSoftHover: "#e0dbfb",
-  accentSofter: "#f4f2ff",
+  accentHover: "#265db0",
+  accentInk: "#265db0",
+  accentRgb: "45 111 209",
+  accentSoft: "#e8effa",
+  accentSoftHover: "#d9e5f7",
+  accentSofter: "#f1f6fc",
 };
 
 type Rgb = [red: number, green: number, blue: number];

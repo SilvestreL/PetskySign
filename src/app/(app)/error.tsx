@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusPanel } from "@/components/shared/status-panel";
+import { tr } from "@/lib/petsky/locale";
 
 export default function AppError({
   reset,
@@ -10,17 +11,19 @@ export default function AppError({
 }) {
   return (
     <StatusPanel
-      description="Something went wrong while loading this page. Please try again."
+      description={tr(
+        "Something went wrong while loading this page. Please try again.",
+      )}
       footer={
         <button
           className="btn-quiet min-h-11 px-5"
           onClick={reset}
           type="button"
         >
-          Try again
+          {tr("Try again")}
         </button>
       }
-      title="We couldn't load this page."
+      title={tr("We couldn't load this page.")}
       tone="error"
     />
   );

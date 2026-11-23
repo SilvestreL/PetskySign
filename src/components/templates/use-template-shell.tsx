@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusPanel } from "@/components/shared/status-panel";
 import { duplicateSignerEmailMessage } from "@/lib/schemas/signer";
 import type { UseTemplateData } from "@/lib/templates";
+import { tr } from "@/lib/petsky/locale";
 
 type UseTemplateShellProps = {
   /** Shown in place of the form when the template cannot be used. */
@@ -26,7 +27,7 @@ type PersonErrors = {
 };
 
 const validEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const genericError = "Something went wrong. Please try again.";
+const genericError = tr("Something went wrong. Please try again.");
 
 function findErrors(people: readonly Person[]): PersonErrors[] {
   const emailCounts = new Map<string, number>();
@@ -44,11 +45,11 @@ function findErrors(people: readonly Person[]): PersonErrors[] {
     const email = person.email.trim().toLowerCase();
 
     if (person.name.trim().length === 0) {
-      errors.name = "Name is required";
+      errors.name = tr("Name is required");
     }
 
     if (!validEmailPattern.test(email)) {
-      errors.email = "Enter a valid email address";
+      errors.email = tr("Enter a valid email address");
     } else if ((emailCounts.get(email) ?? 0) > 1) {
       errors.email = duplicateSignerEmailMessage;
     }
@@ -73,14 +74,14 @@ export function UseTemplateShell({
   if (!template) {
     return (
       <div className="space-y-5">
-        <PageHeader title="Use a template" />
+        <PageHeader title={tr("Use a template")} />
         <StatusPanel
-          action={{ href: "/templates", label: "Back to templates" }}
+          action={{ href: "/templates", label: tr("Back to templates") }}
           description={
             errorMessage ??
-            "We couldn't load this template. Try again in a moment."
+            tr("We couldn't load this template. Try again in a moment.")
           }
-          title="This template can't be used"
+          title={tr("This template can't be used")}
           tone="error"
         />
       </div>
@@ -89,7 +90,7 @@ export function UseTemplateShell({
 
   const errors = findErrors(people);
   const titleError =
-    title.trim().length === 0 ? "Give the envelope a title" : undefined;
+    title.trim().length === 0 ? tr("Give the envelope a title") : undefined;
   const canSubmit =
     !titleError && errors.every((error) => !error.name && !error.email);
 
@@ -142,7 +143,7 @@ export function UseTemplateShell({
     <div className="space-y-5">
       <PageHeader
         description={`${template.name} · ${template.pageCountLabel} · ${template.fieldCountLabel}`}
-        title="Use a template"
+        title={tr("Use a template")}
       />
 
       <form
@@ -154,7 +155,7 @@ export function UseTemplateShell({
       >
         <label className="grid max-w-xl gap-1.5">
           <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-            Envelope title
+            {tr("Envelope title")}
           </span>
           <input
             aria-invalid={showErrors && titleError ? true : undefined}
@@ -181,11 +182,12 @@ export function UseTemplateShell({
         <div className="space-y-3">
           <div className="space-y-1">
             <h2 className="text-lg font-extrabold text-(--fg)">
-              Who is signing this time?
+              {tr("Who is signing this time?")}
             </h2>
             <p className="text-sm leading-6 text-(--secondary)">
-              They receive the document in this order. The fields are already
-              placed for each of them.
+              {tr(
+                "They receive the document in this order. The fields are already placed for each of them.",
+              )}
             </p>
           </div>
 
@@ -216,18 +218,18 @@ export function UseTemplateShell({
                   <div className="mt-3 grid gap-x-4 gap-y-3 md:grid-cols-2">
                     <label className="grid auto-rows-min gap-1.5">
                       <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                        Name
+                        {tr("Name")}
                       </span>
                       <input
                         aria-invalid={nameError ? true : undefined}
-                        aria-label={`${role.name} name`}
+                        aria-label={tr("{name} name", { name: role.name })}
                         className="field-input"
                         disabled={isSubmitting}
                         maxLength={120}
                         onChange={(event) =>
                           updatePerson(index, { name: event.target.value })
                         }
-                        placeholder="Jane Smith"
+                        placeholder={tr("Jane Smith")}
                         type="text"
                         value={person.name}
                       />
@@ -243,18 +245,18 @@ export function UseTemplateShell({
 
                     <label className="grid auto-rows-min gap-1.5">
                       <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                        Email
+                        {tr("Email")}
                       </span>
                       <input
                         aria-invalid={emailError ? true : undefined}
-                        aria-label={`${role.name} email`}
+                        aria-label={tr("{name} email", { name: role.name })}
                         className="field-input"
                         disabled={isSubmitting}
                         maxLength={320}
                         onChange={(event) =>
                           updatePerson(index, { email: event.target.value })
                         }
-                        placeholder="jane@company.com"
+                        placeholder={tr("jane@company.com")}
                         type="email"
                         value={person.email}
                       />
@@ -275,9 +277,9 @@ export function UseTemplateShell({
         </div>
 
         <p className="text-sm leading-6 text-(--secondary)">
-          Nothing is sent yet. You will see the review step next, where you can
-          still change the fields, add people who get a copy, or add an extra
-          check before signing.
+          {tr(
+            "Nothing is sent yet. You will see the review step next, where you can still change the fields, add people who get a copy, or add an extra check before signing.",
+          )}
         </p>
 
         {submitError ? (
@@ -292,10 +294,10 @@ export function UseTemplateShell({
             href="/templates"
             variant="secondary"
           >
-            Cancel
+            {tr("Cancel")}
           </ShellButton>
           <ShellButton loading={isSubmitting} type="submit">
-            {isSubmitting ? "Creating..." : "Create draft"}
+            {isSubmitting ? tr("Creating...") : tr("Create draft")}
           </ShellButton>
         </div>
       </form>

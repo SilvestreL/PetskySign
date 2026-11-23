@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { tr } from "@/lib/petsky/locale";
 
 // Part 11 mode. Administrators only. The install's audit trail is in the
 // security panel.
 
-const GENERIC_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const GENERIC_ERROR_MESSAGE = tr("Something went wrong. Please try again.");
 
 export function Part11Panel({ initialEnabled }: { initialEnabled: boolean }) {
   const enabled = initialEnabled;
@@ -45,23 +46,17 @@ export function Part11Panel({ initialEnabled }: { initialEnabled: boolean }) {
     <div className="space-y-5 border-t border-(--border) pt-8" id="part11">
       <div className="space-y-2">
         <h3 className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-          FDA 21 CFR Part 11 mode
+          {tr("FDA 21 CFR Part 11 mode")}
         </h3>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          For regulated records. While it is on, envelopes are sent only to
-          people with an account here whose identity an administrator has
-          confirmed under People. Each signer gives their email address and
-          password to open the document and again to sign, and confirms what the
-          signature means, which is printed beside it with their name and the
-          time. Five wrong passwords lock the account for signing and email the
-          administrators. Finished envelopes are never deleted by the retention
-          period or a data request, and a void needs a reason.
+          {tr(
+            "For regulated records. While it is on, envelopes are sent only to people with an account here whose identity an administrator has confirmed under People. Each signer gives their email address and password to open the document and again to sign, and confirms what the signature means, which is printed beside it with their name and the time. Five wrong passwords lock the account for signing and email the administrators. Finished envelopes are never deleted by the retention period or a data request, and a void needs a reason.",
+          )}
         </p>
         <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
-          Turning it on does not by itself make this site compliant. Your
-          organization still validates the system, writes and follows its own
-          procedures, trains its people and certifies its electronic signatures
-          to the FDA.
+          {tr(
+            "Turning it on does not by itself make this site compliant. Your organization still validates the system, writes and follows its own procedures, trains its people and certifies its electronic signatures to the FDA.",
+          )}
         </p>
       </div>
 
@@ -82,10 +77,10 @@ export function Part11Panel({ initialEnabled }: { initialEnabled: boolean }) {
           type="button"
         >
           {isSaving
-            ? "Saving..."
+            ? tr("Saving...")
             : enabled
-              ? "Turn off Part 11 mode"
-              : "Turn on Part 11 mode"}
+              ? tr("Turn off Part 11 mode")
+              : tr("Turn on Part 11 mode")}
         </button>
       </div>
     </div>

@@ -24,10 +24,16 @@ import {
   type SignatureMeaning,
 } from "@/lib/types/domain";
 import { getSignerPalette } from "./signer-palette";
+import { tr } from "@/lib/petsky/locale";
 
-const envelopeSteps = ["Upload", "Signers", "Place fields", "Review"];
+const envelopeSteps = [
+  tr("Upload"),
+  tr("Signers"),
+  tr("Place fields"),
+  tr("Review"),
+];
 const validEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const genericSubmitError = "Something went wrong. Please try again.";
+const genericSubmitError = tr("Something went wrong. Please try again.");
 
 type SignersShellProps = {
   envelopeId: string;
@@ -111,13 +117,13 @@ const SIGNER_CHECK_CHOICES: readonly {
   label: string;
   value: SignerCheckChoice;
 }[] = [
-  { label: "No extra check", value: "none" },
+  { label: tr("No extra check"), value: "none" },
   {
-    label: "Email them a one-time code when they open the link",
+    label: tr("Email them a one-time code when they open the link"),
     value: "email_code",
   },
   {
-    label: "Ask for an access code you give them yourself",
+    label: tr("Ask for an access code you give them yourself"),
     value: "access_code",
   },
 ];
@@ -182,14 +188,14 @@ function buildCopyRecipientErrors(
     const normalizedEmail = recipient.email.trim().toLowerCase();
 
     if (recipient.name.trim().length === 0) {
-      errors.name = "Name is required";
+      errors.name = tr("Name is required");
     }
 
     if (
       normalizedEmail.length === 0 ||
       !validEmailPattern.test(normalizedEmail)
     ) {
-      errors.email = "Enter a valid email address";
+      errors.email = tr("Enter a valid email address");
     } else if (taken.has(normalizedEmail)) {
       errors.email = duplicateCopyRecipientEmailMessage;
     }
@@ -222,14 +228,14 @@ function buildSignerErrors(signers: readonly ShellSigner[]) {
     const normalizedEmail = signer.email.trim().toLowerCase();
 
     if (normalizedName.length === 0) {
-      signerErrors.name = "Name is required";
+      signerErrors.name = tr("Name is required");
     }
 
     if (
       normalizedEmail.length === 0 ||
       !validEmailPattern.test(normalizedEmail)
     ) {
-      signerErrors.email = "Enter a valid email address";
+      signerErrors.email = tr("Enter a valid email address");
     } else if (emailCounts[normalizedEmail] > 1) {
       signerErrors.email = duplicateSignerEmailMessage;
     }
@@ -238,12 +244,12 @@ function buildSignerErrors(signers: readonly ShellSigner[]) {
     const keepsSavedCode = signer.hasAccessCode && !signer.removeAccessCode;
 
     if (signer.wantsAccessCode && accessCode.length === 0 && !keepsSavedCode) {
-      signerErrors.accessCode = "Type the code you will give them";
+      signerErrors.accessCode = tr("Type the code you will give them");
     } else if (
       accessCode.length > 0 &&
       (accessCode.length < 4 || accessCode.length > 64)
     ) {
-      signerErrors.accessCode = "Use 4 to 64 characters";
+      signerErrors.accessCode = tr("Use 4 to 64 characters");
     }
 
     errorsBySignerId[signer.localId] = signerErrors;
@@ -387,8 +393,10 @@ function SignerCard({
   const order = index + 1;
   const routeLabel =
     order === 1
-      ? "Receives the invitation immediately after send."
-      : `Receives the document after Signer ${order - 1} finishes.`;
+      ? tr("Receives the invitation immediately after send.")
+      : tr("Receives the document after Signer {previous} finishes.", {
+          previous: order - 1,
+        });
 
   return (
     <li className="well p-4 sm:p-5">
@@ -407,7 +415,7 @@ function SignerCard({
                 className="size-2 rounded-full"
                 style={{ backgroundColor: palette.color }}
               />
-              Signer {order}
+              {tr("Signer {order}", { order })}
             </span>
             <p className="text-[0.8125rem] leading-5 text-(--secondary)">
               {routeLabel}
@@ -416,33 +424,33 @@ function SignerCard({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
-              aria-label={`Move signer ${order} earlier`}
+              aria-label={tr("Move signer {order} earlier", { order })}
               className="btn-quiet"
               disabled={disabled || !canMoveEarlier}
               onClick={() => onMove("earlier")}
               type="button"
             >
               <ChevronLeftIcon aria-hidden="true" className="-ml-1 size-4" />
-              Earlier
+              {tr("Earlier")}
             </button>
             <button
-              aria-label={`Move signer ${order} later`}
+              aria-label={tr("Move signer {order} later", { order })}
               className="btn-quiet"
               disabled={disabled || !canMoveLater}
               onClick={() => onMove("later")}
               type="button"
             >
-              Later
+              {tr("Later")}
               <ChevronRightIcon aria-hidden="true" className="-mr-1 size-4" />
             </button>
             <button
-              aria-label={`Remove signer ${order}`}
+              aria-label={tr("Remove signer {order}", { order })}
               className="btn-quiet btn-quiet-danger"
               disabled={disabled || !canRemove}
               onClick={onRemove}
               type="button"
             >
-              Remove
+              {tr("Remove")}
             </button>
           </div>
         </div>
@@ -450,18 +458,18 @@ function SignerCard({
         <div className="grid gap-x-4 gap-y-1 md:grid-cols-2">
           <label className="grid auto-rows-min gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Name
+              {tr("Name")}
             </span>
             <input
               aria-invalid={nameError ? true : undefined}
-              aria-label={`Signer ${order} name`}
+              aria-label={tr("Signer {order} name", { order })}
               className="field-input"
               disabled={disabled}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 onChange("name", event.target.value)
               }
               onBlur={() => onBlur("name")}
-              placeholder="Jane Smith"
+              placeholder={tr("Jane Smith")}
               type="text"
               value={signer.name}
             />
@@ -478,18 +486,18 @@ function SignerCard({
 
           <label className="grid auto-rows-min gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Email
+              {tr("Email")}
             </span>
             <input
               aria-invalid={emailError ? true : undefined}
-              aria-label={`Signer ${order} email`}
+              aria-label={tr("Signer {order} email", { order })}
               className="field-input"
               disabled={disabled}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 onChange("email", event.target.value)
               }
               onBlur={() => onBlur("email")}
-              placeholder="jane@company.com"
+              placeholder={tr("jane@company.com")}
               type="email"
               value={signer.email}
             />
@@ -508,17 +516,16 @@ function SignerCard({
         {part11Mode ? (
           <label className="grid gap-2 rounded-2xl bg-white p-4 text-sm text-(--fg) sm:p-5">
             <span className="font-bold text-(--fg)">
-              What this signature means
+              {tr("What this signature means")}
             </span>
             <span className="text-[0.8125rem] leading-5 text-(--secondary)">
-              Part 11 mode is on. The meaning is printed beside the signature
-              with the signer&apos;s name and the time. The signer needs an
-              account here with a confirmed email address, and an administrator
-              must have confirmed who they are.
+              {tr(
+                "Part 11 mode is on. The meaning is printed beside the signature with the signer's name and the time. The signer needs an account here with a confirmed email address, and an administrator must have confirmed who they are.",
+              )}
             </span>
             <select
               aria-invalid={!signer.signatureMeaning ? true : undefined}
-              aria-label={`Signer ${order} signature meaning`}
+              aria-label={tr("Signer {order} signature meaning", { order })}
               className="field-input"
               disabled={disabled}
               onChange={(event: ChangeEvent<HTMLSelectElement>) =>
@@ -532,42 +539,53 @@ function SignerCard({
               }
               value={signer.signatureMeaning ?? ""}
             >
-              <option value="">Choose a meaning</option>
+              <option value="">{tr("Choose a meaning")}</option>
               {signatureMeanings.map((meaning) => (
                 <option key={meaning} value={meaning}>
-                  {SIGNATURE_MEANING_DETAILS[meaning].label}
+                  {tr(SIGNATURE_MEANING_DETAILS[meaning].label)}
                 </option>
               ))}
             </select>
             {signer.signatureMeaning ? (
               <span className="text-[0.8125rem] leading-5 text-(--secondary)">
-                {SIGNATURE_MEANING_DETAILS[signer.signatureMeaning].statement}
+                {tr(
+                  SIGNATURE_MEANING_DETAILS[signer.signatureMeaning].statement,
+                )}
               </span>
             ) : null}
           </label>
         ) : null}
 
         <fieldset className="grid gap-3 rounded-2xl bg-white p-4 text-sm text-(--fg) sm:p-5">
-          <legend className="sr-only">Extra check before signing</legend>
+          <legend className="sr-only">
+            {tr("Extra check before signing")}
+          </legend>
           <p className="font-bold text-(--fg)">
-            Extra check before signing{" "}
-            <span className="font-normal text-(--secondary)">(optional)</span>
+            {tr("Extra check before signing")}{" "}
+            <span className="font-normal text-(--secondary)">
+              {tr("(optional)")}
+            </span>
           </p>
           <p className="text-[0.8125rem] leading-5 text-(--secondary)">
-            By default anyone holding the emailed link can sign. Pick a check
-            when the signer&apos;s identity matters.
+            {tr(
+              "By default anyone holding the emailed link can sign. Pick a check when the signer's identity matters.",
+            )}
           </p>
           {checkChoice === "both" ? (
             <p className="text-[0.8125rem] leading-5 text-(--secondary)">
-              This signer has both an emailed code and an access code, so they
-              must pass both. Picking one option below removes the other.
+              {tr(
+                "This signer has both an emailed code and an access code, so they must pass both. Picking one option below removes the other.",
+              )}
             </p>
           ) : null}
           <div className="grid gap-2" role="radiogroup">
             {SIGNER_CHECK_CHOICES.map((choice) => (
               <label className="flex items-start gap-3" key={choice.value}>
                 <input
-                  aria-label={`Signer ${order} check: ${choice.label}`}
+                  aria-label={tr("Signer {order} check: {check}", {
+                    check: choice.label,
+                    order,
+                  })}
                   checked={checkChoice === choice.value}
                   className="mt-0.5 size-4.5 shrink-0 cursor-pointer accent-(--accent)"
                   disabled={disabled}
@@ -583,14 +601,16 @@ function SignerCard({
           {signer.wantsAccessCode ? (
             <label className="grid gap-2">
               <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-                Access code you will give them yourself, for example by phone
+                {tr(
+                  "Access code you will give them yourself, for example by phone",
+                )}
                 {keepsSavedCode
-                  ? " (a code is set; type a new one to change it)"
+                  ? tr(" (a code is set; type a new one to change it)")
                   : ""}
               </span>
               <input
                 aria-invalid={accessCodeError ? true : undefined}
-                aria-label={`Signer ${order} access code`}
+                aria-label={tr("Signer {order} access code", { order })}
                 autoComplete="off"
                 className="field-input"
                 disabled={disabled}
@@ -599,7 +619,7 @@ function SignerCard({
                   onChecksChange({ accessCode: event.target.value })
                 }
                 placeholder={
-                  keepsSavedCode ? "••••••" : "At least 4 characters"
+                  keepsSavedCode ? "••••••" : tr("At least 4 characters")
                 }
                 type="text"
                 value={signer.accessCode}
@@ -645,33 +665,35 @@ function CopyRecipientCard({
     <li className="well p-4 sm:p-5">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="pill pill-neutral">Copy {position}</span>
+          <span className="pill pill-neutral">
+            {tr("Copy {position}", { position })}
+          </span>
           <button
-            aria-label={`Remove copy recipient ${position}`}
+            aria-label={tr("Remove copy recipient {position}", { position })}
             className="btn-quiet btn-quiet-danger"
             disabled={disabled}
             onClick={onRemove}
             type="button"
           >
-            Remove
+            {tr("Remove")}
           </button>
         </div>
 
         <div className="grid gap-x-4 gap-y-1 md:grid-cols-2">
           <label className="grid auto-rows-min gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Name
+              {tr("Name")}
             </span>
             <input
               aria-invalid={nameError ? true : undefined}
-              aria-label={`Copy recipient ${position} name`}
+              aria-label={tr("Copy recipient {position} name", { position })}
               className="field-input"
               disabled={disabled}
               onBlur={() => onBlur("name")}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 onChange("name", event.target.value)
               }
-              placeholder="Alex Jones"
+              placeholder={tr("Alex Jones")}
               type="text"
               value={recipient.name}
             />
@@ -688,18 +710,18 @@ function CopyRecipientCard({
 
           <label className="grid auto-rows-min gap-1.5">
             <span className="text-[0.8125rem] font-semibold text-(--secondary)">
-              Email
+              {tr("Email")}
             </span>
             <input
               aria-invalid={emailError ? true : undefined}
-              aria-label={`Copy recipient ${position} email`}
+              aria-label={tr("Copy recipient {position} email", { position })}
               className="field-input"
               disabled={disabled}
               onBlur={() => onBlur("email")}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 onChange("email", event.target.value)
               }
-              placeholder="alex@company.com"
+              placeholder={tr("alex@company.com")}
               type="email"
               value={recipient.email}
             />
@@ -941,17 +963,19 @@ export function SignersShell({
     return (
       <div className="space-y-5">
         <PageHeader
-          description="Step 2 of 4 - Add signers"
-          title="New envelope"
+          description={tr("Step 2 of 4 - Add signers")}
+          title={tr("New envelope")}
         />
         <StepIndicator current={2} steps={envelopeSteps} />
         <StatusPanel
           action={{
             href: `/envelopes/${envelopeId}/signers`,
-            label: "Retry",
+            label: tr("Retry"),
           }}
-          description="We couldn't load this draft's signer list. Try again and confirm the upload step completed successfully."
-          title="Couldn't load signer setup"
+          description={tr(
+            "We couldn't load this draft's signer list. Try again and confirm the upload step completed successfully.",
+          )}
+          title={tr("Couldn't load signer setup")}
           tone="error"
         />
       </div>
@@ -961,8 +985,8 @@ export function SignersShell({
   return (
     <div className="space-y-5">
       <PageHeader
-        description="Step 2 of 4 - Add signers"
-        title="New envelope"
+        description={tr("Step 2 of 4 - Add signers")}
+        title={tr("New envelope")}
       />
 
       <StepIndicator current={2} steps={envelopeSteps} />
@@ -975,10 +999,10 @@ export function SignersShell({
         <div className="space-y-5">
           <div className="space-y-1">
             <h2 className="text-lg font-extrabold text-(--fg)">
-              Signers will receive the document in this order.
+              {tr("Signers will receive the document in this order.")}
             </h2>
             <p className="text-sm leading-6 text-(--secondary)">
-              Up to 10 signers per document.
+              {tr("Up to 10 signers per document.")}
             </p>
           </div>
 
@@ -1036,11 +1060,11 @@ export function SignersShell({
               onClick={handleAddSigner}
               type="button"
             >
-              + Add another signer
+              {tr("+ Add another signer")}
             </button>
             {!canAddSigner ? (
               <p className="text-[0.8125rem] font-semibold text-(--tertiary)">
-                Maximum reached
+                {tr("Maximum reached")}
               </p>
             ) : null}
           </div>
@@ -1048,14 +1072,15 @@ export function SignersShell({
           <div className="space-y-3 pt-3">
             <div className="space-y-1">
               <h2 className="text-lg font-extrabold text-(--fg)">
-                Send a copy to{" "}
+                {tr("Send a copy to")}{" "}
                 <span className="text-sm font-normal text-(--secondary)">
-                  (optional)
+                  {tr("(optional)")}
                 </span>
               </h2>
               <p className="text-sm leading-6 text-(--secondary)">
-                These people do not sign. They receive the finished document and
-                its certificate once everyone has signed.
+                {tr(
+                  "These people do not sign. They receive the finished document and its certificate once everyone has signed.",
+                )}
               </p>
             </div>
 
@@ -1105,11 +1130,11 @@ export function SignersShell({
                 onClick={handleAddCopyRecipient}
                 type="button"
               >
-                + Add a copy recipient
+                {tr("+ Add a copy recipient")}
               </button>
               {!canAddCopyRecipient ? (
                 <p className="text-[0.8125rem] font-semibold text-(--tertiary)">
-                  Maximum reached
+                  {tr("Maximum reached")}
                 </p>
               ) : null}
             </div>
@@ -1117,14 +1142,14 @@ export function SignersShell({
 
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <ShellButton href="/envelopes/new" variant="secondary">
-              ← Back
+              {tr("← Back")}
             </ShellButton>
             <ShellButton
               disabled={!canContinue}
               loading={isSubmitting}
               onClick={handleContinue}
             >
-              Next →
+              {tr("Next →")}
             </ShellButton>
           </div>
         </div>

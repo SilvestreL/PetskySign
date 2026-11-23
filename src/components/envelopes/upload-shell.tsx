@@ -29,8 +29,14 @@ import {
 } from "@/lib/pdf-preview-error";
 import { assertPdfPreviewRenderable } from "@/lib/pdfjs-client";
 import { type CreateEnvelopeResponse } from "@/lib/schemas/envelope";
+import { tr } from "@/lib/petsky/locale";
 
-const envelopeSteps = ["Upload", "Signers", "Place fields", "Review"];
+const envelopeSteps = [
+  tr("Upload"),
+  tr("Signers"),
+  tr("Place fields"),
+  tr("Review"),
+];
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
 type UploadErrorCode = "invalid-type" | "preview-unavailable" | "too-large";
@@ -42,9 +48,11 @@ type UploadSummary = {
 };
 
 const errorMessageMap: Record<UploadErrorCode, string> = {
-  "invalid-type": "Only PDF files are supported. Please upload a valid PDF.",
-  "preview-unavailable": PREVIEW_UNAVAILABLE_MESSAGE,
-  "too-large": "This file exceeds the 20 MB limit.",
+  "invalid-type": tr(
+    "Only PDF files are supported. Please upload a valid PDF.",
+  ),
+  "preview-unavailable": tr(PREVIEW_UNAVAILABLE_MESSAGE),
+  "too-large": tr("This file exceeds the 20 MB limit."),
 };
 
 const knownTitleSuggestions: Record<string, string> = {
@@ -134,11 +142,11 @@ function UploadShellLayout({
       <PageHeader
         action={
           <Link className="btn-quiet min-h-11 px-4" href="/templates">
-            Start from a template
+            {tr("Start from a template")}
           </Link>
         }
-        description="Step 1 of 4 - Upload document"
-        title="New envelope"
+        description={tr("Step 1 of 4 - Upload document")}
+        title={tr("New envelope")}
       />
 
       <StepIndicator current={1} steps={envelopeSteps} />
@@ -150,16 +158,16 @@ function UploadShellLayout({
       >
         <div className="space-y-6">
           <FieldShell
-            label="Envelope title"
+            label={tr("Envelope title")}
             onChange={onTitleChange}
-            placeholder="e.g., NDA - Client Bravo"
+            placeholder={tr("e.g., NDA - Client Bravo")}
             readOnly={false}
             value={title}
           />
 
           <div
             aria-busy={isBusy}
-            aria-label="Document upload dropzone"
+            aria-label={tr("Document upload dropzone")}
             className={cn(
               "cursor-pointer rounded-[1.25rem] border-2 border-dashed px-6 py-10 text-center transition sm:px-10 sm:py-12",
               dropzoneClasses,
@@ -176,7 +184,7 @@ function UploadShellLayout({
               {isBusy ? (
                 <>
                   <div
-                    aria-label="Upload progress"
+                    aria-label={tr("Upload progress")}
                     className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-white"
                     role="progressbar"
                   >
@@ -184,10 +192,12 @@ function UploadShellLayout({
                   </div>
                   <div className="space-y-1.5">
                     <p className="text-lg font-bold tracking-[-0.02em] text-(--fg)">
-                      Uploading...
+                      {tr("Uploading...")}
                     </p>
                     <p className="text-sm leading-6 text-(--secondary)">
-                      Validating the PDF before you continue to signer setup.
+                      {tr(
+                        "Validating the PDF before you continue to signer setup.",
+                      )}
                     </p>
                   </div>
                 </>
@@ -202,17 +212,17 @@ function UploadShellLayout({
                   </span>
                   <div className="space-y-1.5">
                     <p className="text-lg font-bold tracking-[-0.02em] text-(--fg)">
-                      Drag and drop your PDF here
+                      {tr("Drag and drop your PDF here")}
                     </p>
                     <p className="text-sm text-(--secondary)">
-                      or{" "}
+                      {tr("or")}{" "}
                       <span className="font-bold text-(--accent-ink) underline decoration-[rgb(var(--accent-rgb)/0.35)] underline-offset-4">
-                        click to browse
+                        {tr("click to browse")}
                       </span>
                     </p>
                   </div>
                   <p className="text-[0.8125rem] font-medium text-(--tertiary)">
-                    PDF only - 20 MB max
+                    {tr("PDF only - 20 MB max")}
                   </p>
                 </>
               )}
@@ -261,7 +271,7 @@ function UploadShellLayout({
                 type="button"
                 variant="outline"
               >
-                Remove
+                {tr("Remove")}
               </Button>
             </section>
           ) : null}
@@ -272,7 +282,7 @@ function UploadShellLayout({
               loading={isSubmitting}
               onClick={onContinue}
             >
-              Next -&gt;
+              {tr("Next ->")}
             </ShellButton>
           </div>
         </div>
@@ -398,8 +408,8 @@ export function UploadShell({ directUploadPrefix = null }: UploadShellProps) {
         data: null,
         error:
           payload && typeof payload === "object" && "error" in payload
-            ? (payload.error ?? "Something went wrong. Please try again.")
-            : "Something went wrong. Please try again.",
+            ? (payload.error ?? tr("Something went wrong. Please try again."))
+            : tr("Something went wrong. Please try again."),
       };
     }
 
@@ -506,7 +516,7 @@ export function UploadShell({ directUploadPrefix = null }: UploadShellProps) {
           "Failed to validate the PDF preview before draft creation.",
           error,
         );
-        setErrorMessage(describePdfPreviewFailure(error));
+        setErrorMessage(tr(describePdfPreviewFailure(error)));
         setIsCreatingDraft(false);
         return;
       }
@@ -522,7 +532,7 @@ export function UploadShell({ directUploadPrefix = null }: UploadShellProps) {
 
       if (!payload.data || payload.error) {
         setErrorMessage(
-          payload.error ?? "Something went wrong. Please try again.",
+          payload.error ?? tr("Something went wrong. Please try again."),
         );
 
         if (response.status === 400) {
@@ -558,7 +568,7 @@ export function UploadShell({ directUploadPrefix = null }: UploadShellProps) {
         router.push(redirectPath);
       });
     } catch {
-      setErrorMessage("Something went wrong. Please try again.");
+      setErrorMessage(tr("Something went wrong. Please try again."));
       setIsCreatingDraft(false);
     }
   }
@@ -587,7 +597,7 @@ export function UploadShell({ directUploadPrefix = null }: UploadShellProps) {
     >
       <input
         accept=".pdf,application/pdf"
-        aria-label="Upload PDF"
+        aria-label={tr("Upload PDF")}
         className="sr-only"
         onChange={handleInputChange}
         ref={fileInputRef}

@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { tr } from "@/lib/petsky/locale";
 
 const CLOSURE_CONFIRMATION_PHRASE = "close my account";
-const GENERIC_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const GENERIC_ERROR_MESSAGE = tr("Something went wrong. Please try again.");
 
 type SettingsShellProps = {
   initialProfile?: ProfileValues;
@@ -78,11 +79,11 @@ function validateProfileValues(values: ProfileValues): ProfileErrors {
   const errors: ProfileErrors = {};
 
   if (values.fullName.length === 0) {
-    errors.fullName = "Enter your full name";
+    errors.fullName = tr("Enter your full name");
   }
 
   if (values.email.length === 0 || !values.email.includes("@")) {
-    errors.email = "Enter a valid email address";
+    errors.email = tr("Enter a valid email address");
   }
 
   return errors;
@@ -92,11 +93,11 @@ function validatePasswordValues(values: PasswordValues): PasswordErrors {
   const errors: PasswordErrors = {};
 
   if (values.currentPassword.length === 0) {
-    errors.currentPassword = "Enter your current password";
+    errors.currentPassword = tr("Enter your current password");
   }
 
   if (values.newPassword.trim().length < 15) {
-    errors.newPassword = "Password must be at least 15 characters";
+    errors.newPassword = tr("Password must be at least 15 characters");
   }
 
   return errors;
@@ -264,7 +265,7 @@ export function SettingsShell({
               typeof fieldErrors.email === "string"
                 ? fieldErrors.email
                 : isDuplicateEmailMessage(errorMessage)
-                  ? "This email is already registered"
+                  ? tr("This email is already registered")
                   : undefined,
             fullName:
               typeof fieldErrors.fullName === "string"
@@ -275,7 +276,7 @@ export function SettingsShell({
             message:
               typeof fieldErrors.email === "string" ||
               typeof fieldErrors.fullName === "string"
-                ? "Please correct the highlighted fields."
+                ? tr("Please correct the highlighted fields.")
                 : errorMessage,
             tone: "error",
           });
@@ -307,9 +308,9 @@ export function SettingsShell({
 
           setProfileErrors({
             email: isDuplicateEmailMessage(errorMessage)
-              ? "This email is already registered"
+              ? tr("This email is already registered")
               : isNoOpEmailChangeMessage(errorMessage)
-                ? "Enter a different email address"
+                ? tr("Enter a different email address")
                 : undefined,
             fullName: undefined,
           });
@@ -321,7 +322,7 @@ export function SettingsShell({
             message:
               isDuplicateEmailMessage(errorMessage) ||
               isNoOpEmailChangeMessage(errorMessage)
-                ? "Please correct the highlighted fields."
+                ? tr("Please correct the highlighted fields.")
                 : errorMessage,
             tone: "error",
           });
@@ -332,8 +333,12 @@ export function SettingsShell({
         setProfileErrors({});
         setFeedback({
           message: nameChanged
-            ? "Profile updated. If the email change can proceed, you'll receive the next steps by email."
-            : "If the email change can proceed, you'll receive the next steps by email.",
+            ? tr(
+                "Profile updated. If the email change can proceed, you'll receive the next steps by email.",
+              )
+            : tr(
+                "If the email change can proceed, you'll receive the next steps by email.",
+              ),
           tone: "success",
         });
         return;
@@ -342,7 +347,7 @@ export function SettingsShell({
       setProfileValues(nextSavedProfile);
       setProfileErrors({});
       setFeedback({
-        message: "Profile updated.",
+        message: tr("Profile updated."),
         tone: "success",
       });
     } catch {
@@ -392,12 +397,12 @@ export function SettingsShell({
 
         setPasswordErrors({
           currentPassword: isInvalidPasswordMessage(errorMessage)
-            ? "Current password is incorrect"
+            ? tr("Current password is incorrect")
             : undefined,
           newPassword: isPasswordTooShortMessage(errorMessage)
-            ? "Password must be at least 15 characters"
+            ? tr("Password must be at least 15 characters")
             : isCompromisedPasswordMessage(errorMessage)
-              ? "Choose a password that hasn't appeared in a breach"
+              ? tr("Choose a password that hasn't appeared in a breach")
               : undefined,
         });
         setFeedback({
@@ -405,7 +410,7 @@ export function SettingsShell({
             isInvalidPasswordMessage(errorMessage) ||
             isPasswordTooShortMessage(errorMessage) ||
             isCompromisedPasswordMessage(errorMessage)
-              ? "Please correct the highlighted fields."
+              ? tr("Please correct the highlighted fields.")
               : errorMessage,
           tone: "error",
         });
@@ -415,7 +420,7 @@ export function SettingsShell({
       setPasswordValues(defaultPasswordValues);
       setPasswordErrors({});
       setFeedback({
-        message: "Password updated.",
+        message: tr("Password updated."),
         tone: "success",
       });
     } catch {
@@ -476,7 +481,7 @@ export function SettingsShell({
       }
 
       setFeedback({
-        message: "Password reset link sent.",
+        message: tr("Password reset link sent."),
         tone: "success",
       });
     } catch {
@@ -539,8 +544,9 @@ export function SettingsShell({
       setClosureConfirmation("");
       setIsClosureDialogOpen(false);
       setFeedback({
-        message:
+        message: tr(
           "We've received your request. Download any documents you want to keep within 30 days.",
+        ),
         tone: "success",
       });
     } catch {
@@ -556,8 +562,10 @@ export function SettingsShell({
   return (
     <div className="space-y-5">
       <PageHeader
-        description="Manage your sender profile, password, two-step sign-in and account lifecycle."
-        title="Settings"
+        description={tr(
+          "Manage your sender profile, password, two-step sign-in and account lifecycle.",
+        )}
+        title={tr("Settings")}
       />
 
       {feedback ? <SettingsFeedback feedback={feedback} /> : null}
@@ -565,14 +573,14 @@ export function SettingsShell({
       <section data-animate="enter" data-animate-delay="1">
         <div className="space-y-5">
           <div className="panel space-y-5 p-6 sm:p-8">
-            <SectionHeading title="Profile" />
+            <SectionHeading title={tr("Profile")} />
 
             <form className="space-y-5" onSubmit={handleProfileSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FieldShell
                   disabled={isBusy}
                   error={profileErrors.fullName}
-                  label="Full name"
+                  label={tr("Full name")}
                   name="fullName"
                   onChange={handleProfileChange("fullName")}
                   readOnly={false}
@@ -581,7 +589,7 @@ export function SettingsShell({
                 <FieldShell
                   disabled={isBusy}
                   error={profileErrors.email}
-                  label="Email"
+                  label={tr("Email")}
                   name="email"
                   onChange={handleProfileChange("email")}
                   readOnly={false}
@@ -590,8 +598,9 @@ export function SettingsShell({
                 />
               </div>
               <p className="text-sm leading-6 text-(--secondary)">
-                Email changes are verified through your current inbox first,
-                then the new inbox.
+                {tr(
+                  "Email changes are verified through your current inbox first, then the new inbox.",
+                )}
               </p>
 
               <ShellButton
@@ -599,21 +608,23 @@ export function SettingsShell({
                 loading={pendingAction === "profile"}
                 type="submit"
               >
-                {pendingAction === "profile" ? "Saving..." : "Save changes"}
+                {pendingAction === "profile"
+                  ? tr("Saving...")
+                  : tr("Save changes")}
               </ShellButton>
             </form>
           </div>
 
           <div className="panel p-6 sm:p-8">
             <div className="space-y-5">
-              <SectionHeading title="Password" />
+              <SectionHeading title={tr("Password")} />
 
               <form className="space-y-5" onSubmit={handlePasswordSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldShell
                     disabled={isBusy}
                     error={passwordErrors.currentPassword}
-                    label="Current password"
+                    label={tr("Current password")}
                     name="currentPassword"
                     onChange={handlePasswordChange("currentPassword")}
                     placeholder="••••••••••"
@@ -624,8 +635,8 @@ export function SettingsShell({
                   <FieldShell
                     disabled={isBusy}
                     error={passwordErrors.newPassword}
-                    helper="Must be at least 15 characters"
-                    label="New password"
+                    helper={tr("Must be at least 15 characters")}
+                    label={tr("New password")}
                     name="newPassword"
                     onChange={handlePasswordChange("newPassword")}
                     placeholder="•••••••••••••••"
@@ -642,8 +653,8 @@ export function SettingsShell({
                     type="submit"
                   >
                     {pendingAction === "password"
-                      ? "Updating..."
-                      : "Update password"}
+                      ? tr("Updating...")
+                      : tr("Update password")}
                   </ShellButton>
                   <ShellButton
                     disabled={isBusy}
@@ -652,8 +663,8 @@ export function SettingsShell({
                     variant="secondary"
                   >
                     {pendingAction === "reset"
-                      ? "Sending..."
-                      : "Email me a reset link"}
+                      ? tr("Sending...")
+                      : tr("Email me a reset link")}
                   </ShellButton>
                 </div>
               </form>
@@ -669,7 +680,7 @@ export function SettingsShell({
 
           <div className="panel p-6 sm:p-8">
             <div className="space-y-5">
-              <SectionHeading title="Danger zone" />
+              <SectionHeading title={tr("Danger zone")} />
               <p className="max-w-2xl text-sm leading-6 text-(--secondary)">
                 {closureCopy}
               </p>
@@ -679,7 +690,7 @@ export function SettingsShell({
                 onClick={openClosureDialog}
                 variant="secondary"
               >
-                Request account closure
+                {tr("Request account closure")}
               </ShellButton>
             </div>
           </div>
@@ -715,9 +726,7 @@ function SettingsFeedback({
 }>) {
   return (
     <section
-      className={`notice ${
-        feedback.tone === "success" ? "notice-success" : "notice-danger"
-      }`}
+      className={`notice ${feedback.tone === "success" ? "notice-success" : "notice-danger"}`}
       role={feedback.tone === "error" ? "alert" : "status"}
     >
       <p>{feedback.message}</p>
@@ -738,8 +747,14 @@ function useClosureCopy(): string {
   const { hosted, productName } = useBranding();
 
   return hosted
-    ? `Before closing your account, download any documents you want to keep. After closure, ${productName} keeps a 30-day export window and then deletes your stored documents, templates and envelope records. Signers keep the copies they were emailed.`
-    : `Before closing your account, download any documents you want to keep. After 30 days your drafts, unfinished envelopes and templates are deleted. Finished documents and their audit trails stay with ${productName}: they move to an administrator, because they are the organization's records.`;
+    ? tr(
+        "Before closing your account, download any documents you want to keep. After closure, {productName} keeps a 30-day export window and then deletes your stored documents, templates and envelope records. Signers keep the copies they were emailed.",
+        { productName },
+      )
+    : tr(
+        "Before closing your account, download any documents you want to keep. After 30 days your drafts, unfinished envelopes and templates are deleted. Finished documents and their audit trails stay with {productName}: they move to an administrator, because they are the organization's records.",
+        { productName },
+      );
 }
 
 function AccountClosureDialog({
@@ -764,7 +779,7 @@ function AccountClosureDialog({
       <DialogContent className="max-w-lg sm:p-8" showCloseButton={false}>
         <div className="space-y-5">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Request account closure?</DialogTitle>
+            <DialogTitle>{tr("Request account closure?")}</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-(--secondary)">
               {closureCopy}
             </DialogDescription>
@@ -775,10 +790,10 @@ function AccountClosureDialog({
               className="text-[0.8125rem] font-semibold text-(--secondary)"
               htmlFor="close-account-confirmation"
             >
-              Type &quot;close my account&quot; to confirm:
+              {tr('Type "close my account" to confirm:')}
             </FieldLabel>
             <Input
-              aria-label='Type "close my account" to confirm:'
+              aria-label={tr('Type "close my account" to confirm:')}
               disabled={isSubmitting}
               id="close-account-confirmation"
               onChange={(event) => onChange(event.target.value)}
@@ -793,7 +808,7 @@ function AccountClosureDialog({
               onClick={onCancel}
               variant="secondary"
             >
-              Cancel
+              {tr("Cancel")}
             </ShellButton>
             <ShellButton
               disabled={!isReady}
@@ -801,7 +816,7 @@ function AccountClosureDialog({
               onClick={onConfirm}
               variant="danger"
             >
-              {isSubmitting ? "Requesting..." : "Request closure"}
+              {isSubmitting ? tr("Requesting...") : tr("Request closure")}
             </ShellButton>
           </div>
         </div>

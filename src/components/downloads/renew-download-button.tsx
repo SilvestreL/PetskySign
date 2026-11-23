@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ShellButton } from "@/components/shared/form-shell";
+import { tr } from "@/lib/petsky/locale";
 
 export function RenewDownloadButton({ token }: { token: string }) {
   const [state, setState] = useState<
@@ -28,7 +29,8 @@ export function RenewDownloadButton({ token }: { token: string }) {
       if (!response.ok || !payload?.maskedEmail) {
         setState({
           kind: "error",
-          message: payload?.error ?? "New links could not be sent right now.",
+          message:
+            payload?.error ?? tr("New links could not be sent right now."),
         });
         return;
       }
@@ -37,7 +39,7 @@ export function RenewDownloadButton({ token }: { token: string }) {
     } catch {
       setState({
         kind: "error",
-        message: "New links could not be sent right now.",
+        message: tr("New links could not be sent right now."),
       });
     }
   }
@@ -46,13 +48,15 @@ export function RenewDownloadButton({ token }: { token: string }) {
     <div className="space-y-4">
       {state.kind === "sent" ? (
         <p role="status" className="notice notice-success">
-          New links are on their way to {state.maskedEmail}.
+          {tr("New links are on their way to {email}.", {
+            email: state.maskedEmail,
+          })}
         </p>
       ) : (
         <ShellButton loading={state.kind === "sending"} onClick={handleClick}>
           {state.kind === "sending"
-            ? "Sending..."
-            : "Email me new download links"}
+            ? tr("Sending...")
+            : tr("Email me new download links")}
         </ShellButton>
       )}
       {state.kind === "error" ? (

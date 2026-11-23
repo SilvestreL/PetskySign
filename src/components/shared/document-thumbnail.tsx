@@ -7,6 +7,7 @@ import {
   backfillEnvelopeThumbnail,
   buildEnvelopeThumbnailUrl,
 } from "@/lib/pdf-thumbnail";
+import { tr } from "@/lib/petsky/locale";
 
 type DocumentThumbnailProps = {
   className?: string;
@@ -118,7 +119,7 @@ export function DocumentThumbnail({
       // A blob: URL made in this browser: next/image has nothing to optimize.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        alt={`First page of ${title}`}
+        alt={tr("First page of {title}", { title })}
         className={frameClassName}
         decoding="async"
         src={drawnUrl}
@@ -138,7 +139,7 @@ export function DocumentThumbnail({
           would fetch it from the server without that cookie. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        alt={`First page of ${title}`}
+        alt={tr("First page of {title}", { title })}
         className={
           state === "loading"
             ? "pointer-events-none absolute left-1/2 top-1/2 size-px opacity-0"

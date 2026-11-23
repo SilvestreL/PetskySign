@@ -1,5 +1,8 @@
 import { PT_BR } from "./pt-br.ts";
 import { PT_BR_ADMIN } from "./pt-br-admin.ts";
+import { PT_BR_ENVELOPES } from "./pt-br-envelopes.ts";
+import { PT_BR_MISC } from "./pt-br-misc.ts";
+import { PT_BR_SETTINGS } from "./pt-br-settings.ts";
 
 /**
  * PetskySign: the language of what signers see. SignuDoc is written in
@@ -32,6 +35,15 @@ export function displayTimeZone(): string {
   return appLocale() === "pt-BR" ? "America/Sao_Paulo" : "UTC";
 }
 
+/** Every dictionary; where two translate the same text, the first wins. */
+const PT_BR_ALL: Readonly<Record<string, string>> = {
+  ...PT_BR_MISC,
+  ...PT_BR_SETTINGS,
+  ...PT_BR_ENVELOPES,
+  ...PT_BR_ADMIN,
+  ...PT_BR,
+};
+
 export type TrParams = Record<string, string | number>;
 
 /**
@@ -39,8 +51,7 @@ export type TrParams = Record<string, string | number>;
  * in `{name}` placeholders from `params`. Unknown text comes back as it is.
  */
 export function tr(text: string, params?: TrParams): string {
-  const template =
-    appLocale() === "pt-BR" ? (PT_BR[text] ?? PT_BR_ADMIN[text] ?? text) : text;
+  const template = appLocale() === "pt-BR" ? (PT_BR_ALL[text] ?? text) : text;
 
   if (!params) {
     return template;

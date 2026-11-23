@@ -217,7 +217,6 @@ async function formatEnvelopeCounts(
   );
 }
 
-
 function formatRetentionDeadline(timestamp: number): string {
   return new Date(timestamp * 1000).toISOString().replace(".000Z", " UTC");
 }

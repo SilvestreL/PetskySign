@@ -30,9 +30,13 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const document = await getDraftEnvelopeDocumentForUser(session.user.id, id, {
-      database: getDb(),
-    });
+    const document = await getDraftEnvelopeDocumentForUser(
+      session.user.id,
+      id,
+      {
+        database: getDb(),
+      },
+    );
     const responseBody = document.body.slice().buffer as ArrayBuffer;
 
     return new Response(responseBody, {

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { tr } from "@/lib/petsky/locale";
 
 type StatusPanelProps = {
   action?: {
@@ -35,10 +36,10 @@ export function StatusPanel({
       <span className={`pill ${badgeStyles[tone]}`}>
         {eyebrow ??
           (tone === "error"
-            ? "Error"
+            ? tr("Error")
             : tone === "loading"
-              ? "Loading"
-              : "Ready")}
+              ? tr("Loading")
+              : tr("Ready"))}
       </span>
       <div className="space-y-2">
         <h2 className="text-xl font-extrabold tracking-[-0.02em] text-(--fg)">
