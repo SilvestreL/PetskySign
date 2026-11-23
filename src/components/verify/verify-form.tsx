@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 
-import { intlLocale, tr } from "@/lib/petsky/locale";
+import { displayTimeZone, intlLocale, tr } from "@/lib/petsky/locale";
 
 type VerifyAnswer =
   | { match: false }
@@ -19,7 +19,7 @@ type VerifyAnswer =
 const dateFormatter = new Intl.DateTimeFormat(intlLocale(), {
   dateStyle: "long",
   timeStyle: "short",
-  timeZone: "UTC",
+  timeZone: displayTimeZone(),
 });
 
 const STATUS_WORDS = {
