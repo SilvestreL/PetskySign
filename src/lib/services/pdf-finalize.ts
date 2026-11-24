@@ -229,7 +229,17 @@ type CertificateLine = WrappedLine & {
   rule?: boolean;
   /** Narrower, to leave room for the QR code on the first page. */
   besideQr?: boolean;
+  /** Narrower, to leave room for the signer's signature on the right. */
+  besideSignature?: boolean;
+  /** The signer whose signature is drawn on the right of this line. */
+  signatureOf?: string;
 };
+
+/** PetskySign: a signer's signature, as they made it, for the certificate. */
+type CertificateSignature = { image: PDFImage } | { text: string };
+
+const CERT_SIGNATURE_WIDTH = 150;
+const CERT_SIGNATURE_HEIGHT = 30;
 
 const CERT_INK: [number, number, number] = [0.094, 0.165, 0.227];
 const CERT_MUTED: [number, number, number] = [0.36, 0.42, 0.5];
@@ -749,7 +759,10 @@ function buildAuditLines(input: {
   ) => {
     const indent = options.indent ?? 0;
     const width =
-      input.maxWidth - indent - (options.besideQr ? CERT_QR_SIZE + 16 : 0);
+      input.maxWidth -
+      indent -
+      (options.besideQr ? CERT_QR_SIZE + 16 : 0) -
+      (options.besideSignature ? CERT_SIGNATURE_WIDTH + 12 : 0);
     const wrapped = wrapText(font, size, width, text);
 
     wrapped.forEach((line, index) => {
@@ -759,6 +772,8 @@ function buildAuditLines(input: {
       lines.push({
         ...line,
         besideQr: options.besideQr,
+        besideSignature: options.besideSignature,
+        signatureOf: first ? options.signatureOf : undefined,
         color: options.color,
         gapAfter:
           last && options.gapAfter ? options.gapAfter * scale : undefined,
@@ -839,8 +854,10 @@ function buildAuditLines(input: {
       input.fonts.bold,
       nameFontSize,
       {
+        besideSignature: true,
         color: CERT_INK,
         gapBefore: 6,
+        signatureOf: signer.id ?? undefined,
         icon:
           signer.status === "signed"
             ? "check"
@@ -854,7 +871,7 @@ function buildAuditLines(input: {
       showEmail ? `<${signer.email}> | ${actionLabel}` : actionLabel,
       input.fonts.regular,
       bodyFontSize,
-      { color: CERT_MUTED, indent: 20 },
+      { besideSignature: true, color: CERT_MUTED, indent: 20 },
     );
 
     for (const detail of describeSignerEvidence(
@@ -863,6 +880,7 @@ function buildAuditLines(input: {
       Boolean(input.redactForRecipients),
     )) {
       pushParagraph(detail, input.fonts.regular, smallFontSize + 0.5, {
+        besideSignature: true,
         color: CERT_MUTED,
         indent: 20,
       });
@@ -1340,6 +1358,9 @@ function appendAuditTrailPages(input: {
   productName?: string;
   redactForRecipients?: boolean;
   senderName?: string | null;
+  signatureFace?: TextFace;
+  /** PetskySign: each signer's signature, by signer id. */
+  signatures?: ReadonlyMap<string, CertificateSignature>;
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
 }) {
@@ -1436,6 +1457,20 @@ function appendAuditTrailPages(input: {
 
     const x = margin + (line.indent ?? 0);
     const baseline = cursorY - line.size;
+
+    const signature = line.signatureOf
+      ? input.signatures?.get(line.signatureOf)
+      : undefined;
+
+    if (signature) {
+      drawCertificateSignature(
+        page,
+        signature,
+        input.signatureFace,
+        pageSize.width - margin - CERT_SIGNATURE_WIDTH,
+        baseline + line.size - CERT_SIGNATURE_HEIGHT + 4,
+      );
+    }
 
     if (line.icon) {
       drawCertificateIcon(
@@ -1640,6 +1675,60 @@ function drawSecurityFrame(page: PDFPage, width: number, height: number) {
   }
 }
 
+/**
+ * PetskySign: a signer's signature on the right of their name, as D4Sign's
+ * certificate shows it: the drawn image, or the typed name in the signature
+ * face, fitted in a box over a thin line.
+ */
+function drawCertificateSignature(
+  page: PDFPage,
+  signature: CertificateSignature,
+  face: TextFace | undefined,
+  x: number,
+  y: number,
+) {
+  if ("image" in signature) {
+    const scaled = signature.image.scaleToFit(
+      CERT_SIGNATURE_WIDTH,
+      CERT_SIGNATURE_HEIGHT - 4,
+    );
+
+    page.drawImage(signature.image, {
+      height: scaled.height,
+      width: scaled.width,
+      x: x + (CERT_SIGNATURE_WIDTH - scaled.width) / 2,
+      y: y + 4,
+    });
+  } else if (face) {
+    const size = fitTextSize(
+      face,
+      signature.text,
+      CERT_SIGNATURE_WIDTH,
+      CERT_SIGNATURE_HEIGHT - 6,
+      18,
+    );
+
+    face.drawText(page, signature.text, {
+      color: rgb(0.12, 0.12, 0.12),
+      size,
+      x:
+        x +
+        (CERT_SIGNATURE_WIDTH - face.widthOfTextAtSize(signature.text, size)) /
+          2,
+      y: y + 6,
+    });
+  } else {
+    return;
+  }
+
+  page.drawLine({
+    color: rgb(0.75, 0.79, 0.85),
+    end: { x: x + CERT_SIGNATURE_WIDTH, y: y + 2 },
+    start: { x, y: y + 2 },
+    thickness: 0.5,
+  });
+}
+
 /** A check, a cross or a dot in a small circle, before a signer's name. */
 function drawCertificateIcon(
   page: PDFPage,
@@ -1736,6 +1825,11 @@ type CertificateInput = {
   envelope: EnvelopeRecord;
   redactForRecipients?: boolean;
   /**
+   * PetskySign: the document's fields, to show each signer's signature
+   * beside their name. Without them the certificate has no signatures.
+   */
+  fields?: readonly FieldRecord[];
+  /**
    * PetskySign: the business that sent the document, for the sender's
    * events. Read from the document's branding when left out.
    */
@@ -1772,7 +1866,10 @@ export async function storeEnvelopeCertificatePdf(
 ): Promise<StoredSealedPdf> {
   assertTerminalEnvelope(input.envelope, "Certificates");
 
-  const body = await renderEnvelopeCertificatePdf(input, { seal });
+  const body = await renderEnvelopeCertificatePdf(input, {
+    seal,
+    storageService,
+  });
   const stored = await storageService.putObject({
     body,
     contentType: "application/pdf",
@@ -1818,11 +1915,30 @@ async function readSenderName(envelopeId: string): Promise<string | null> {
 
 export async function renderEnvelopeCertificatePdf(
   input: CertificateInput,
-  { seal = defaultSealer }: SealOption = {},
+  {
+    seal = defaultSealer,
+    storageService,
+  }: SealOption & { storageService?: StorageService } = {},
 ): Promise<Uint8Array> {
   assertTerminalEnvelope(input.envelope, "Certificates");
 
   const pdfDocument = await PDFDocument.create();
+  // PetskySign: each signer's first signature, shown beside their name.
+  const signatureFields = new Map<string, FieldRecord>();
+
+  for (const field of input.fields ?? []) {
+    if (
+      field.type === "signature" &&
+      shouldStampField(field) &&
+      !signatureFields.has(field.signerId)
+    ) {
+      signatureFields.set(field.signerId, field);
+    }
+  }
+
+  const typedSignatures = [...signatureFields.values()]
+    .filter((field) => field.inputMethod !== "drawn" && field.value?.trim())
+    .map((field) => field.value!.trim());
   const faces = await embedTextFaces(
     pdfDocument,
     [
@@ -1830,9 +1946,35 @@ export async function renderEnvelopeCertificatePdf(
       input.signers,
       input.auditEvents,
       input.copyRecipients ?? [],
+      typedSignatures,
     ],
-    { bold: true, certificate: true },
+    {
+      bold: true,
+      certificate: true,
+      signature: typedSignatures.length > 0,
+    },
   );
+  const signatures = new Map<string, CertificateSignature>();
+  const imageCache = new Map<string, PDFImage>();
+
+  for (const [signerId, field] of signatureFields) {
+    if (field.inputMethod === "drawn" && field.imageKey) {
+      try {
+        signatures.set(signerId, {
+          image: await getEmbeddedPng(
+            field.imageKey,
+            imageCache,
+            pdfDocument,
+            storageService ?? createStorageService(),
+          ),
+        });
+      } catch {
+        // A missing image leaves the name without a signature beside it.
+      }
+    } else if (field.value?.trim()) {
+      signatures.set(signerId, { text: field.value.trim() });
+    }
+  }
   const terminalTimestamp = resolveTerminalTimestamp(
     input.envelope,
     Math.floor(Date.now() / 1000),
@@ -1854,6 +1996,8 @@ export async function renderEnvelopeCertificatePdf(
       .then((branding) => branding.productName)
       .catch(() => "Petsky"),
     senderName: input.senderName ?? (await readSenderName(input.envelope.id)),
+    signatureFace: typedSignatures.length > 0 ? faces.signature : undefined,
+    signatures,
     redactForRecipients: input.redactForRecipients,
     signedPdfSha256: input.signedPdfSha256,
     signers: input.signers,
@@ -2072,6 +2216,7 @@ export async function finalizeEnvelope(
         },
         copyRecipients: input.copyRecipients,
         envelope: completedEnvelope,
+        fields: input.fields,
         signedPdfSha256,
         signers: input.signers,
       },
@@ -2092,6 +2237,7 @@ export async function finalizeEnvelope(
         },
         copyRecipients: input.copyRecipients,
         envelope: completedEnvelope,
+        fields: input.fields,
         signedPdfSha256,
         signers: input.signers,
       },
