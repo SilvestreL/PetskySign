@@ -38,6 +38,7 @@ import { isPlaceholderEmail } from "../petsky/placeholder-email.ts";
 import { getDb } from "../db/connection.ts";
 import { getDocumentBranding } from "../petsky/document-branding.ts";
 import { describeLocation } from "../petsky/location.ts";
+import { PETSKY_LOGO_PNG_BASE64 } from "../petsky/certificate-logo.ts";
 
 const DEFAULT_AUDIT_PAGE_SIZE = {
   height: 792,
@@ -1430,6 +1431,8 @@ function appendAuditTrailPages(input: {
     bold: TextFace;
     regular: TextFace;
   };
+  /** PetskySign: the logo in each page's header, in place of the name. */
+  logo?: PDFImage;
   pdfDocument: PDFDocument;
   /** PetskySign: the name in each page's header. */
   productName?: string;
@@ -1596,44 +1599,92 @@ function appendAuditTrailPages(input: {
     // Frame: the patterned band of a security paper, as D4Sign's.
     drawSecurityFrame(current, width, height);
 
-    // Header: the product on the left, the page count and time zone right.
+    // Header, as D4Sign's banner: the logo on the left; on the right the
+    // page count, the clock source in bold and when this was generated,
+    // beside an NTP.br badge.
     const headerY = height - margin - 16;
 
-    input.fonts.bold.drawText(current, productName, {
-      color: rgb(...CERT_ACCENT),
-      size: 16,
-      x: margin,
-      y: headerY,
-    });
-    input.fonts.regular.drawText(current, tr("Electronic signature"), {
-      color: rgb(...CERT_MUTED),
-      size: 7.5,
-      x: margin,
-      y: headerY - 12,
-    });
+    if (input.logo) {
+      const logoHeight = 30;
+      const logoWidth = (input.logo.width / input.logo.height) * logoHeight;
 
-    const rightLines = [
-      appLocale() === "pt-BR"
-        ? pages.length === 1
-          ? tr("1 page - Times in Brasília time")
-          : tr("{count} pages - Times in Brasília time", {
-              count: pages.length,
-            })
-        : pages.length === 1
-          ? tr("1 page - Times in UTC")
-          : tr("{count} pages - Times in UTC", { count: pages.length }),
-      tr("Certificate generated {date}", { date: generatedAt }),
+      current.drawImage(input.logo, {
+        height: logoHeight,
+        width: logoWidth,
+        x: margin - 2,
+        y: headerY - 14,
+      });
+    } else {
+      input.fonts.bold.drawText(current, productName, {
+        color: rgb(...CERT_ACCENT),
+        size: 16,
+        x: margin,
+        y: headerY,
+      });
+      input.fonts.regular.drawText(current, tr("Electronic signature"), {
+        color: rgb(...CERT_MUTED),
+        size: 7.5,
+        x: margin,
+        y: headerY - 12,
+      });
+    }
+
+    const brazil = appLocale() === "pt-BR";
+    let textRight = width - margin;
+
+    if (brazil) {
+      // The badge: "ntp.br" in the green of the Brazilian legal time.
+      const badge = "ntp.br";
+      const badgeSize = 15;
+      const badgeWidth = input.fonts.bold.widthOfTextAtSize(badge, badgeSize);
+
+      input.fonts.bold.drawText(current, badge, {
+        color: rgb(0.47, 0.71, 0.2),
+        size: badgeSize,
+        x: width - margin - badgeWidth,
+        y: headerY - 6,
+      });
+      textRight = width - margin - badgeWidth - 10;
+    }
+
+    const rightLines: Array<{ bold: boolean; text: string }> = [
+      {
+        bold: false,
+        text: brazil
+          ? pages.length === 1
+            ? tr("1 page - Times in Brasília time")
+            : tr("{count} pages - Times in Brasília time", {
+                count: pages.length,
+              })
+          : pages.length === 1
+            ? tr("1 page - Times in UTC")
+            : tr("{count} pages - Times in UTC", { count: pages.length }),
+      },
+      ...(brazil
+        ? [
+            {
+              bold: true,
+              text: tr(
+                "Synchronized with NTP.br and the Observatório Nacional (ON)",
+              ),
+            },
+          ]
+        : []),
+      {
+        bold: false,
+        text: tr("Certificate generated {date}", { date: generatedAt }),
+      },
     ];
 
-    rightLines.forEach((text, lineIndex) => {
+    rightLines.forEach((line, lineIndex) => {
       const size = 7.5;
-      const face = lineIndex === 0 ? input.fonts.bold : input.fonts.regular;
+      const face = line.bold ? input.fonts.bold : input.fonts.regular;
 
-      face.drawText(current, text, {
-        color: rgb(...CERT_MUTED),
+      face.drawText(current, line.text, {
+        color: rgb(...(line.bold ? CERT_INK : CERT_MUTED)),
         size,
-        x: width - margin - face.widthOfTextAtSize(text, size),
-        y: headerY + 4 - lineIndex * 11,
+        x: textRight - face.widthOfTextAtSize(line.text, size),
+        y: headerY + 6 - lineIndex * 10,
       });
     });
 
@@ -1664,21 +1715,6 @@ function appendAuditTrailPages(input: {
       x: width - margin - input.fonts.regular.widthOfTextAtSize(pageLabel, 7),
       y: footerY,
     });
-
-    // PetskySign: the server clock follows the Brazilian legal time (NTP.br,
-    // from the Observatório Nacional), as D4Sign's certificate says.
-    if (appLocale() === "pt-BR") {
-      const clock = tr(
-        "Times synchronized with the Brazilian Legal Time (NTP.br / Observatório Nacional)",
-      );
-
-      input.fonts.regular.drawText(current, clock, {
-        color: rgb(...CERT_MUTED),
-        size: 6.5,
-        x: (width - input.fonts.regular.widthOfTextAtSize(clock, 6.5)) / 2,
-        y: footerY + 10,
-      });
-    }
   });
 }
 
@@ -2083,6 +2119,7 @@ export async function renderEnvelopeCertificatePdf(
     copyRecipients: input.copyRecipients,
     envelope: input.envelope,
     fonts: faces,
+    logo: await embedCertificateLogo(pdfDocument),
     pdfDocument,
     productName: await getBranding()
       .then((branding) => branding.productName)
@@ -2222,6 +2259,7 @@ export async function renderFinalizedEnvelopePdf(
       copyRecipients: input.copyRecipients,
       envelope: input.envelope,
       fonts: faces,
+      logo: await embedCertificateLogo(pdfDocument),
       pdfDocument,
       signers: input.signers,
     });
@@ -2362,5 +2400,18 @@ export async function finalizeEnvelope(
         : []),
     ]);
     throw error;
+  }
+}
+
+/** PetskySign: the Petsky logo for the certificate header, or none. */
+async function embedCertificateLogo(
+  pdfDocument: PDFDocument,
+): Promise<PDFImage | undefined> {
+  try {
+    return await pdfDocument.embedPng(
+      Buffer.from(PETSKY_LOGO_PNG_BASE64, "base64"),
+    );
+  } catch {
+    return undefined;
   }
 }
