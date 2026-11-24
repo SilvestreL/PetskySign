@@ -419,6 +419,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "{count} pages - Times in UTC": "{count} páginas - Datas e horários em UTC",
   "Certificate generated {date}": "Certificado gerado em {date}",
   "1 page - Times in Brasília time": "1 página - Datas e horários de Brasília",
+  "Times synchronized with the Brazilian Legal Time (NTP.br / Observatório Nacional)":
+    "Horários sincronizados com a Hora Legal Brasileira (NTP.br / Observatório Nacional)",
   "1 page - Times in UTC": "1 página - Datas e horários em UTC",
   by: "por",
   "{actor} signed": "{actor} assinou",

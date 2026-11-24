@@ -1664,6 +1664,21 @@ function appendAuditTrailPages(input: {
       x: width - margin - input.fonts.regular.widthOfTextAtSize(pageLabel, 7),
       y: footerY,
     });
+
+    // PetskySign: the server clock follows the Brazilian legal time (NTP.br,
+    // from the Observatório Nacional), as D4Sign's certificate says.
+    if (appLocale() === "pt-BR") {
+      const clock = tr(
+        "Times synchronized with the Brazilian Legal Time (NTP.br / Observatório Nacional)",
+      );
+
+      input.fonts.regular.drawText(current, clock, {
+        color: rgb(...CERT_MUTED),
+        size: 6.5,
+        x: (width - input.fonts.regular.widthOfTextAtSize(clock, 6.5)) / 2,
+        y: footerY + 10,
+      });
+    }
   });
 }
 
