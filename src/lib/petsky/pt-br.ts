@@ -261,7 +261,7 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Unable to start signing.": "Não foi possível iniciar a assinatura.",
 
   // Certificado de auditoria (PDF)
-  "SignuDoc Certificate of Completion": "Certificado de conclusão",
+  "SignuDoc Certificate of Completion": "Certificado de assinaturas",
   "SignuDoc Audit Certificate": "Certificado de auditoria",
   "Audit certificate: {title}": "Certificado de auditoria: {title}",
   "Envelope ID: {id}": "ID do documento: {id}",
@@ -287,7 +287,7 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Copy recipients": "Receberam cópia",
   "Sent a copy of the finished document. They did not sign it.":
     "Receberam uma cópia do documento concluído. Não assinaram.",
-  "Audit events": "Histórico",
+  "Audit events": "Eventos do documento",
   "Signer corrected": "signatário corrigido",
   "How to check this record": "Como conferir este registro",
   "The signed document and this certificate are each sealed with a digital signature. A PDF reader shows the seal as valid only if the file has not changed since it was sealed. The SHA-256 values above can also be checked on this site's Verify page.":
@@ -397,4 +397,17 @@ export const PT_BR: Readonly<Record<string, string>> = {
     "Não foi possível enviar o código agora. Tente de novo em um minuto.",
   "Several codes were sent already. Check your WhatsApp.":
     "Já enviamos vários códigos. Confira o seu WhatsApp.",
+  "Document hashes": "Hash do documento",
+  "This record belongs only to the documents with the hashes above.":
+    "Este registro pertence única e exclusivamente aos documentos com os hashes acima.",
+  "Electronic signatures have legal validity in Brazil under MP 2.200-2/2001 and Law 14.063/2020.":
+    "Assinaturas eletrônicas têm validade legal no Brasil, conforme a MP 2.200-2/2001 e a Lei 14.063/2020.",
+  "Electronic signature": "Assinatura eletrônica",
+  "{count} pages - Times in Brasília time":
+    "{count} páginas - Datas e horários de Brasília",
+  "{count} pages - Times in UTC": "{count} páginas - Datas e horários em UTC",
+  "Certificate generated {date}": "Certificado gerado em {date}",
+  "1 page - Times in Brasília time": "1 página - Datas e horários de Brasília",
+  "1 page - Times in UTC": "1 página - Datas e horários em UTC",
+  by: "por",
 };
