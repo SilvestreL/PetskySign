@@ -17,6 +17,8 @@ import { isProduction, resolveAuthSecret } from "./utils/env.ts";
 // - email_code: a one-time code emailed when the signer opens the link.
 //   Proves the person signing controls the mailbox at that moment, not just
 //   that they hold a forwarded link.
+// - whatsapp_code (PetskySign): as email_code, sent by WhatsApp to the
+//   number the sender gave, for signers reached by a link in a chat.
 // - identity (PetskySign): the signer types their full name and CPF, which
 //   must match the CPF the business sent (see petsky/cpf.ts). Proves more
 //   than holding a link forwarded in a chat.
@@ -31,6 +33,7 @@ export const signerCheckMethods = [
   "account",
   "email_code",
   "identity",
+  "whatsapp_code",
 ] as const;
 export type SignerCheckMethod = (typeof signerCheckMethods)[number];
 
@@ -54,6 +57,14 @@ export type SignerCheckState = {
   /** PetskySign: keyed hash of the CPF the signer must type (petsky/cpf.ts). */
   identityCpfHash: string | null;
   requireEmailCode: boolean;
+  /** PetskySign: the WhatsApp code, as the email code (petsky/whatsapp.ts). */
+  requireWhatsappCode: boolean;
+  whatsappCodeAttempts: number;
+  whatsappCodeExpiresAt: number | null;
+  whatsappCodeHash: string | null;
+  whatsappCodeSentAt: number | null;
+  /** "55" + area code + number. */
+  whatsappPhone: string | null;
 };
 
 export async function getSignerCheckState(
@@ -73,7 +84,13 @@ export async function getSignerCheckState(
         email_code_sent_at AS "emailCodeSentAt",
         identity_attempts AS "identityAttempts",
         identity_cpf_hash AS "identityCpfHash",
-        require_email_code AS "requireEmailCode"
+        require_email_code AS "requireEmailCode",
+        require_whatsapp_code AS "requireWhatsappCode",
+        whatsapp_code_attempts AS "whatsappCodeAttempts",
+        whatsapp_code_expires_at AS "whatsappCodeExpiresAt",
+        whatsapp_code_hash AS "whatsappCodeHash",
+        whatsapp_code_sent_at AS "whatsappCodeSentAt",
+        whatsapp_phone AS "whatsappPhone"
       FROM signers
       WHERE id = $1
     `,
@@ -92,18 +109,30 @@ export async function getSignerCheckState(
       identityAttempts: 0,
       identityCpfHash: null,
       requireEmailCode: false,
+      requireWhatsappCode: false,
+      whatsappCodeAttempts: 0,
+      whatsappCodeExpiresAt: null,
+      whatsappCodeHash: null,
+      whatsappCodeSentAt: null,
+      whatsappPhone: null,
     }
   );
 }
 
 export function requiredSignerChecks(
   state: Pick<SignerCheckState, "accessCodeHash" | "requireEmailCode"> &
-    Partial<Pick<SignerCheckState, "accountUserId" | "identityCpfHash">>,
+    Partial<
+      Pick<
+        SignerCheckState,
+        "accountUserId" | "identityCpfHash" | "requireWhatsappCode"
+      >
+    >,
 ): SignerCheckMethod[] {
   return [
     ...(state.accessCodeHash ? (["access_code"] as const) : []),
     ...(state.accountUserId ? (["account"] as const) : []),
     ...(state.requireEmailCode ? (["email_code"] as const) : []),
+    ...(state.requireWhatsappCode ? (["whatsapp_code"] as const) : []),
     // After the emailed code, as at D4Sign: name and CPF just before the
     // document opens.
     ...(state.identityCpfHash ? (["identity"] as const) : []),

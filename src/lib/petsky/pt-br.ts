@@ -381,4 +381,20 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "one-time code sent by email": "código de uso único enviado por e-mail",
   "the CPF typed did not match the sender's records":
     "o CPF digitado não conferiu com o cadastro de quem enviou",
+  "A code was sent to {maskedEmail}.": "Enviamos um código para {maskedEmail}.",
+  "A code was sent to the WhatsApp {phone}.":
+    "Enviamos um código para o WhatsApp {phone}.",
+  "Send me a code on WhatsApp": "Me mandar o código no WhatsApp",
+  '{code} is your code to open "{title}", sent by {sender}. It works for {minutes} minutes. Do not share it.':
+    '{code} é o seu código para abrir "{title}", enviado por {sender}. Vale por {minutes} minutos. Não compartilhe.',
+  "We send a 6-digit code to your WhatsApp.":
+    "Mandamos um código de 6 dígitos para o seu WhatsApp.",
+  "Code from your WhatsApp": "Código do WhatsApp",
+  "one-time code sent by WhatsApp": "código de uso único enviado pelo WhatsApp",
+  "Codes by WhatsApp are not available right now. Ask whoever sent the document.":
+    "O código pelo WhatsApp não está disponível agora. Fale com quem enviou o documento.",
+  "The code could not be sent right now. Try again in a minute.":
+    "Não foi possível enviar o código agora. Tente de novo em um minuto.",
+  "Several codes were sent already. Check your WhatsApp.":
+    "Já enviamos vários códigos. Confira o seu WhatsApp.",
 };

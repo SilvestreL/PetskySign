@@ -35,6 +35,7 @@ import {
 } from "./document-branding.ts";
 import { displayEmail, placeholderEmailFor } from "./placeholder-email.ts";
 import { hashCpf, maskCpf, normalizeCpf } from "./cpf.ts";
+import { getEvolutionConfig, normalizeBrazilMobile } from "./whatsapp.ts";
 
 /**
  * The integration API's operations (/api/v1/documents). A "document" here is
@@ -115,6 +116,22 @@ export const createApiDocumentSchema = z
         ),
       /** Email a one-time code the signer must type before the document opens. */
       requireEmailCode: z.boolean().optional(),
+      /** The signer's Brazilian mobile number, for a code by WhatsApp. */
+      phone: z
+        .string()
+        .trim()
+        .max(30)
+        .optional()
+        .refine(
+          (value) =>
+            value === undefined || normalizeBrazilMobile(value) !== null,
+          { message: "That is not a Brazilian mobile number." },
+        ),
+      /**
+       * Send a one-time code by WhatsApp, to `phone`, that the signer must
+       * type before the document opens.
+       */
+      requireWhatsappCode: z.boolean().optional(),
     }),
     /**
      * Where the signer signs. Coordinates are fractions of the page, from
@@ -140,6 +157,15 @@ export const createApiDocumentSchema = z
     }),
   })
   .superRefine((value, ctx) => {
+    if (value.signer.requireWhatsappCode && !value.signer.phone) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "A mobile number is required to send the signer a code by WhatsApp.",
+        path: ["signer", "phone"],
+      });
+    }
+
     if (value.signer.requireEmailCode && !value.signer.email) {
       ctx.addIssue({
         code: "custom",
@@ -263,6 +289,35 @@ export async function createApiDocument(
 
     if (!signerId) {
       throw new ApiDocumentError("The signer could not be added.", 500);
+    }
+
+    // PetskySign: a WhatsApp code needs this site to be able to send one;
+    // otherwise the signer could never open the document.
+    if (input.signer.requireWhatsappCode && !getEvolutionConfig()) {
+      throw new ApiDocumentError(
+        "Codes by WhatsApp are not set up on this site (EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE).",
+        400,
+      );
+    }
+
+    const phone = input.signer.phone
+      ? normalizeBrazilMobile(input.signer.phone)
+      : null;
+
+    if (phone) {
+      await database.query(
+        `
+          UPDATE signers
+          SET whatsapp_phone = $1, require_whatsapp_code = $2
+          WHERE id = $3 AND envelope_id = $4
+        `,
+        [
+          phone,
+          input.signer.requireWhatsappCode === true,
+          signerId,
+          envelopeId,
+        ],
+      );
     }
 
     const cpf = input.signer.cpf ? normalizeCpf(input.signer.cpf) : null;
