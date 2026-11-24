@@ -15,6 +15,7 @@ import {
   getClientIpAddress,
   getRequestUserAgent,
 } from "@/lib/security/request";
+import { getIpLocation } from "@/lib/petsky/location";
 
 // The last signer's return also finishes the envelope: long-term validation
 // asks certificate authorities, within 15 seconds, and the PDFs are stored.
@@ -74,6 +75,7 @@ export async function GET(request: Request) {
       database: getDb(),
       requestMeta: {
         ipAddress: getClientIpAddress(request.headers),
+        location: getIpLocation(request.headers),
         userAgent: getRequestUserAgent(request.headers),
       },
       verifiedMethodsFor: (token) =>

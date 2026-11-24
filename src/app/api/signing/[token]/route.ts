@@ -19,6 +19,7 @@ import {
   getClientIpAddress,
   getRequestUserAgent,
 } from "@/lib/security/request";
+import { getIpLocation } from "@/lib/petsky/location";
 import { tr } from "@/lib/petsky/locale";
 
 type SigningRouteContext = {
@@ -51,6 +52,7 @@ export async function GET(request: Request, context: SigningRouteContext) {
       verifiedMethods: verifiedMethodsForRequest(token, request),
       requestMeta: {
         ipAddress: getClientIpAddress(request.headers),
+        location: getIpLocation(request.headers),
         userAgent: getRequestUserAgent(request.headers),
       },
     });

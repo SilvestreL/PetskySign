@@ -6,6 +6,10 @@ import {
   MAX_NUMBER_ENTRY_LENGTH,
   MAX_RADIO_GROUP_BUTTONS,
 } from "../field-choices.ts";
+import {
+  deviceLocationSchema,
+  deviceLocationStatusSchema,
+} from "../petsky/location.ts";
 import { fieldInputMethods, fieldTypes } from "../types/domain.ts";
 import {
   idSchema,
@@ -247,6 +251,10 @@ export const signingFieldSubmissionSchema = z.union([
 
 export const signingSubmissionSchema = z.object({
   clientTimezoneOffsetMinutes: z.number().int().min(-840).max(840),
+  // PetskySign: where the device was, if the signer let the browser share
+  // it. Optional evidence: a bad or missing value never blocks a signature.
+  deviceLocation: deviceLocationSchema.optional().catch(undefined),
+  deviceLocationStatus: deviceLocationStatusSchema.optional().catch(undefined),
   fields: z.array(signingFieldSubmissionSchema),
   // Part 11 envelopes: both parts of the signer's electronic signature,
   // given again for this signature (21 CFR 11.200(a)), and their confirmation

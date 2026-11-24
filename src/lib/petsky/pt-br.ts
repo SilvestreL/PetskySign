@@ -400,8 +400,19 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Document hashes": "Hash do documento",
   "This record belongs only to the documents with the hashes above.":
     "Este registro pertence única e exclusivamente aos documentos com os hashes acima.",
-  "Electronic signatures have legal validity in Brazil under MP 2.200-2/2001 and Law 14.063/2020.":
-    "Assinaturas eletrônicas têm validade legal no Brasil, conforme a MP 2.200-2/2001 e a Lei 14.063/2020.",
+  "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001, when the parties accept the means used, as the signer did here.":
+    "A assinatura eletrônica tem validade legal no Brasil pelo art. 10, § 2º, da MP 2.200-2/2001, quando as partes aceitam o meio usado, como o signatário aceitou aqui.",
+  "Location shared by the device: {coordinates} (accuracy {meters} m)":
+    "Localização informada pelo aparelho: {coordinates} (precisão de {meters} m)",
+  "Device location: not allowed by the signer":
+    "Localização do aparelho: não autorizada pelo signatário",
+  "Device location: unavailable": "Localização do aparelho: indisponível",
+  "Approximate location by IP: {place} ({coordinates})":
+    "Localização aproximada pelo IP: {place} ({coordinates})",
+  "Approximate location by IP: {place}":
+    "Localização aproximada pelo IP: {place}",
+  "Your browser may ask to share your location. It is optional: it adds the place where you signed to the certificate, and you can sign without it.":
+    "Seu navegador pode pedir sua localização. É opcional: ela entra no certificado como o lugar onde você assinou, e você pode assinar sem ela.",
   "Electronic signature": "Assinatura eletrônica",
   "{count} pages - Times in Brasília time":
     "{count} páginas - Datas e horários de Brasília",

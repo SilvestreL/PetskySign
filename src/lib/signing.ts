@@ -123,6 +123,12 @@ import {
   normalizeCpf,
 } from "./petsky/cpf.ts";
 import {
+  type DeviceLocation,
+  type DeviceLocationStatus,
+  type IpLocation,
+  locationMetadata,
+} from "./petsky/location.ts";
+import {
   createWhatsappSender,
   maskPhone,
   type WhatsappSender,
@@ -130,6 +136,8 @@ import {
 
 export type SigningRequestMeta = {
   ipAddress?: string | null;
+  /** PetskySign: approximate place from the IP (see petsky/location.ts). */
+  location?: IpLocation | null;
   userAgent?: string | null;
 };
 
@@ -883,6 +891,7 @@ async function recordViewedEventOnce(
           signerId: context.signer.id,
           signerName: context.signer.name,
           signerOrder: context.signer.signOrder,
+          ...locationMetadata({ ip: meta.location }),
         },
         userAgent: meta.userAgent ?? null,
       },
@@ -1029,6 +1038,8 @@ type Part11SignatureRecord = {
 
 function buildSignedAuditEvent(input: {
   authMethods: readonly SignerCheckMethod[];
+  deviceLocation?: DeviceLocation | null;
+  deviceLocationStatus?: DeviceLocationStatus | null;
   envelopeId: string;
   part11?: Part11SignatureRecord | null;
   providerSignature?: ProviderSignatureEvidence | null;
@@ -1058,6 +1069,11 @@ function buildSignedAuditEvent(input: {
       ...(input.providerSignature
         ? { providerSignature: input.providerSignature }
         : {}),
+      ...locationMetadata({
+        device: input.deviceLocation,
+        deviceStatus: input.deviceLocationStatus,
+        ip: input.requestMeta.location,
+      }),
     },
     userAgent: input.requestMeta.userAgent ?? null,
   };
@@ -1084,6 +1100,7 @@ function buildDeclinedAuditEvent(input: {
       signerId: input.signer.id,
       signerName: input.signer.name,
       signerOrder: input.signer.signOrder,
+      ...locationMetadata({ ip: input.requestMeta.location }),
     },
     userAgent: input.requestMeta.userAgent ?? null,
   };
@@ -1987,6 +2004,7 @@ export async function recordSignerConsent(
           ...signerAuditMetadata(context),
           disclosureVersion: ELECTRONIC_RECORDS_DISCLOSURE_VERSION,
           statement: CONSENT_STATEMENT,
+          ...locationMetadata({ ip: requestMeta.location }),
         },
         userAgent: requestMeta.userAgent ?? null,
       },
@@ -2745,6 +2763,12 @@ export async function submitSigningForToken(
             ),
         ),
       ],
+      deviceLocation: parsedInput.deviceLocation
+        ? { ...parsedInput.deviceLocation, source: "device" }
+        : null,
+      deviceLocationStatus: parsedInput.deviceLocation
+        ? "shared"
+        : (parsedInput.deviceLocationStatus ?? null),
       requestMeta,
       signer: context.signer,
       submittedAt,
