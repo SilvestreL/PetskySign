@@ -857,6 +857,7 @@ const AUTHENTICATION_LABELS: Record<string, string> = {
   email_code: "one-time code sent by email",
   // PetskySign: see the identity check in signer-checks.ts.
   identity: "full name and CPF matching the sender's records",
+  whatsapp_code: "one-time code sent by WhatsApp",
 };
 
 function authenticationLabel(method: string): string {

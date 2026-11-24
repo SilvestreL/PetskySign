@@ -122,6 +122,11 @@ import {
   maskCpf,
   normalizeCpf,
 } from "./petsky/cpf.ts";
+import {
+  createWhatsappSender,
+  maskPhone,
+  type WhatsappSender,
+} from "./petsky/whatsapp.ts";
 
 export type SigningRequestMeta = {
   ipAddress?: string | null;
@@ -1337,6 +1342,8 @@ async function assertSignerChecksPassed(
       emailCodeSentAt: state.emailCodeSentAt,
       envelopeTitle: context.envelope.title,
       maskedEmail: maskEmailAddress(context.signer.email),
+      maskedPhone: state.whatsappPhone ? maskPhone(state.whatsappPhone) : null,
+      whatsappCodeSentAt: state.whatsappCodeSentAt,
       pending,
       required,
       senderName: signerFacingSenderName(context.sender),
@@ -1501,6 +1508,121 @@ export async function sendSignerEmailCode(
 }
 
 /**
+ * PetskySign: sends the signer a one-time code by WhatsApp, when the sender
+ * asked for one. Same rules as the emailed code: one code at a time, a new
+ * one at most every EMAIL_CODE_RESEND_SECONDS, valid EMAIL_CODE_TTL_SECONDS.
+ */
+export async function sendSignerWhatsappCode(
+  token: string,
+  {
+    database = getDb(),
+    sendWhatsapp = createWhatsappSender(),
+  }: { database?: DbPool; sendWhatsapp?: WhatsappSender | null } = {},
+): Promise<{ maskedPhone: string; whatsappCodeSentAt: number }> {
+  const context = await resolveSigningContext(token, { database });
+  const state = await getSignerCheckState(context.signer.id!, database);
+  const now = Math.floor(Date.now() / 1000);
+
+  if (!state.requireWhatsappCode || !state.whatsappPhone) {
+    throw new SigningMutationError("No code is needed for this link.", 400);
+  }
+
+  const maskedPhone = maskPhone(state.whatsappPhone);
+
+  if (!sendWhatsapp) {
+    throw new SigningMutationError(
+      "Codes by WhatsApp are not available right now. Ask whoever sent the document.",
+      503,
+    );
+  }
+
+  if (
+    state.whatsappCodeSentAt !== null &&
+    now - state.whatsappCodeSentAt < EMAIL_CODE_RESEND_SECONDS &&
+    state.whatsappCodeHash
+  ) {
+    return { maskedPhone, whatsappCodeSentAt: state.whatsappCodeSentAt };
+  }
+
+  const issued = issueEmailCode();
+  const presentedTokenHash = hashOpaqueToken(token);
+  // Claim the resend window and save the code in one statement, as for the
+  // emailed code, so two tabs cannot both send.
+  const claimed = await database.query(
+    `
+      UPDATE signers
+      SET
+        whatsapp_code_hash = $1,
+        whatsapp_code_expires_at = $2,
+        whatsapp_code_attempts = 0,
+        whatsapp_code_sent_at = $3
+      WHERE id = $4
+        AND signing_token_hash = $6
+        AND (
+          whatsapp_code_hash IS NULL
+          OR whatsapp_code_sent_at IS NULL
+          OR whatsapp_code_sent_at <= $5
+        )
+    `,
+    [
+      issued.hash,
+      now + EMAIL_CODE_TTL_SECONDS,
+      now,
+      context.signer.id,
+      now - EMAIL_CODE_RESEND_SECONDS,
+      presentedTokenHash,
+    ],
+  );
+
+  if (claimed.rowCount !== 1) {
+    const current = await getSignerCheckState(context.signer.id!, database);
+
+    return {
+      maskedPhone,
+      whatsappCodeSentAt: current.whatsappCodeSentAt ?? now,
+    };
+  }
+
+  const minutes = Math.round(EMAIL_CODE_TTL_SECONDS / 60);
+  const sender = signerFacingSenderName(context.sender);
+
+  try {
+    await sendWhatsapp(
+      state.whatsappPhone,
+      tr(
+        '{code} is your code to open "{title}", sent by {sender}. It works for {minutes} minutes. Do not share it.',
+        {
+          code: issued.code,
+          minutes,
+          sender,
+          title: context.envelope.title,
+        },
+      ),
+    );
+  } catch {
+    // Not sent, so the signer may ask again at once.
+    await database.query(
+      `
+        UPDATE signers
+        SET
+          whatsapp_code_hash = NULL,
+          whatsapp_code_expires_at = NULL,
+          whatsapp_code_sent_at = NULL,
+          whatsapp_code_attempts = 0
+        WHERE id = $1 AND whatsapp_code_hash = $2
+      `,
+      [context.signer.id, issued.hash],
+    );
+    throw new SigningMutationError(
+      "The code could not be sent right now. Try again in a minute.",
+      502,
+    );
+  }
+
+  return { maskedPhone, whatsappCodeSentAt: now };
+}
+
+/**
  * Checks an access code or emailed code. Returns every check this browser
  * has now passed, for the caller to store in the link's cookie.
  */
@@ -1659,6 +1781,53 @@ export async function verifySignerCheck(
     }
   } else if (parsed.method === "access_code") {
     passed = checkAccessCode(parsed.code, state.accessCodeHash!);
+  } else if (parsed.method === "whatsapp_code") {
+    // PetskySign: as the emailed code below, with the WhatsApp columns.
+    const attempt = await database.query<{ attempts: number; hash: string }>(
+      `
+        UPDATE signers
+        SET whatsapp_code_attempts = whatsapp_code_attempts + 1
+        WHERE id = $1
+          AND signing_token_hash = $4
+          AND whatsapp_code_hash IS NOT NULL
+          AND whatsapp_code_expires_at >= $2
+          AND whatsapp_code_attempts < $3
+        RETURNING
+          whatsapp_code_hash AS hash,
+          whatsapp_code_attempts AS attempts
+      `,
+      [context.signer.id, now, EMAIL_CODE_MAX_ATTEMPTS, hashOpaqueToken(token)],
+    );
+    const current = attempt.rows[0];
+
+    if (!current) {
+      throw new SigningMutationError(
+        "That code has expired. Send a new one.",
+        410,
+      );
+    }
+
+    if (checkEmailCode(parsed.code, current.hash)) {
+      const consumed = await database.query(
+        `
+          UPDATE signers
+          SET whatsapp_code_hash = NULL, whatsapp_code_expires_at = NULL
+          WHERE id = $1 AND whatsapp_code_hash = $2
+        `,
+        [context.signer.id, current.hash],
+      );
+
+      passed = consumed.rowCount === 1;
+    } else if (current.attempts >= EMAIL_CODE_MAX_ATTEMPTS) {
+      await database.query(
+        `
+          UPDATE signers
+          SET whatsapp_code_hash = NULL, whatsapp_code_expires_at = NULL
+          WHERE id = $1 AND whatsapp_code_hash = $2
+        `,
+        [context.signer.id, current.hash],
+      );
+    }
   } else {
     // Count the attempt and read the code in one statement, so parallel
     // guesses cannot share an attempt.

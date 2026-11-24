@@ -25,6 +25,11 @@ const METHOD_COPY: Record<Method, { helper: string; label: string }> = {
     helper: "We email a 6-digit code to the address this document was sent to.",
     label: "Code from your email",
   },
+  // PetskySign: a code sent by WhatsApp to the number the sender has.
+  whatsapp_code: {
+    helper: "We send a 6-digit code to your WhatsApp.",
+    label: "Code from your WhatsApp",
+  },
   // PetskySign: full name and CPF, checked against the CPF the sender has.
   identity: {
     helper: "The CPF must be the one the sender has for you.",
@@ -56,8 +61,14 @@ export function SignerVerificationScreen({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(
     state.emailCodeSentAt && method === "email_code"
-      ? `A code was sent to ${state.maskedEmail}.`
-      : null,
+      ? tr("A code was sent to {maskedEmail}.", {
+          maskedEmail: state.maskedEmail,
+        })
+      : state.whatsappCodeSentAt && method === "whatsapp_code"
+        ? tr("A code was sent to the WhatsApp {phone}.", {
+            phone: state.maskedPhone ?? "",
+          })
+        : null,
   );
   const [isChecking, setIsChecking] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -68,12 +79,14 @@ export function SignerVerificationScreen({
     setError(null);
 
     try {
-      const response = await fetch(`${base}/verify/email-code`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `${base}/verify/${method === "whatsapp_code" ? "whatsapp-code" : "email-code"}`,
+        { method: "POST" },
+      );
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
         maskedEmail?: string;
+        maskedPhone?: string;
       } | null;
 
       if (!response.ok) {
@@ -82,7 +95,13 @@ export function SignerVerificationScreen({
       }
 
       setNotice(
-        `A code was sent to ${payload?.maskedEmail ?? state.maskedEmail}.`,
+        method === "whatsapp_code"
+          ? tr("A code was sent to the WhatsApp {phone}.", {
+              phone: payload?.maskedPhone ?? state.maskedPhone ?? "",
+            })
+          : tr("A code was sent to {maskedEmail}.", {
+              maskedEmail: payload?.maskedEmail ?? state.maskedEmail,
+            }),
       );
     } catch {
       setError(tr("The code could not be sent right now."));
@@ -235,13 +254,17 @@ export function SignerVerificationScreen({
               >
                 {tr("Continue")}
               </ShellButton>
-              {method === "email_code" ? (
+              {method === "email_code" || method === "whatsapp_code" ? (
                 <ShellButton
                   loading={isSending}
                   onClick={sendCode}
                   variant="secondary"
                 >
-                  {notice ? tr("Send a new code") : tr("Email me a code")}
+                  {notice
+                    ? tr("Send a new code")
+                    : method === "whatsapp_code"
+                      ? tr("Send me a code on WhatsApp")
+                      : tr("Email me a code")}
                 </ShellButton>
               ) : null}
             </div>

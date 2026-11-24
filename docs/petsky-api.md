@@ -44,7 +44,9 @@ Cria o documento e envia. Aceita dois formatos:
     "channel": "link",
     "email": "opcional@x.com",
     "cpf": "529.982.247-25",
-    "requireEmailCode": false
+    "requireEmailCode": false,
+    "phone": "+55 82 99605-7758",
+    "requireWhatsappCode": true
   },
   "fields": [
     {
@@ -86,6 +88,11 @@ Cria o documento e envia. Aceita dois formatos:
   - O PetskySign guarda só um hash do CPF, com chave (o `BETTER_AUTH_SECRET`), e a versão mascarada (`529.***.***-25`).
   - O nome digitado e o CPF mascarado entram no histórico e no certificado.
   - Trocar o `BETTER_AUTH_SECRET` faz o CPF dos documentos ainda não assinados deixar de conferir: reenvie esses documentos.
+- `signer.requireWhatsappCode: true` manda pelo **WhatsApp** um código de uso único que o tutor digita antes de o documento abrir. É o caso do tutor que recebe o link na conversa e não tem e-mail.
+  - Precisa de `signer.phone`, um celular brasileiro: `+55 82 99605-7758`, `82996057758` e formatos parecidos. Fixo é recusado.
+  - Precisa da Evolution API configurada no PetskySign (`EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`). Sem isso, o envio do documento é recusado, para não deixar um contrato que ninguém consegue abrir.
+  - O código vale 10 minutos, é de uso único, aceita 5 tentativas e pode ser reenviado a cada 60 segundos, igual ao código por e-mail.
+  - Ordem com tudo ligado: código por e-mail, código pelo WhatsApp e depois nome e CPF.
 - `signer.requireEmailCode: true` manda por e-mail um código de uso único que o tutor digita antes de o documento abrir. Precisa de `signer.email`, inclusive no canal `link`. Com CPF e código ligados juntos, o código vem primeiro, como na D4Sign.
 
 - `fields` é opcional. Sem ele, entra uma caixa de assinatura no pé da última página. Os tipos aceitos são `signature`, `initials`, `name` e `date`. Precisa haver pelo menos uma `signature`.

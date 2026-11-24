@@ -139,7 +139,7 @@ export type SigningDisclosure = z.infer<typeof signingDisclosureSchema>;
 export const signerCheckRequestSchema = z.discriminatedUnion("method", [
   z.object({
     code: z.string().trim().min(1).max(64),
-    method: z.enum(["access_code", "email_code"]),
+    method: z.enum(["access_code", "email_code", "whatsapp_code"]),
   }),
   // Part 11 envelopes: the signer's own account, by its email address and
   // password.
@@ -162,10 +162,17 @@ export const signerConsentRequestSchema = z.object({
 
 export type SigningVerificationState = {
   emailCodeSentAt: number | null;
+  /** PetskySign: "(82) •••••-7758", when a WhatsApp code is asked for. */
+  maskedPhone: string | null;
+  whatsappCodeSentAt: number | null;
   envelopeTitle: string;
   maskedEmail: string;
-  pending: Array<"access_code" | "account" | "email_code" | "identity">;
-  required: Array<"access_code" | "account" | "email_code" | "identity">;
+  pending: Array<
+    "access_code" | "account" | "email_code" | "identity" | "whatsapp_code"
+  >;
+  required: Array<
+    "access_code" | "account" | "email_code" | "identity" | "whatsapp_code"
+  >;
   senderName: string;
 };
 export type SigningDeclineResponse = z.infer<
