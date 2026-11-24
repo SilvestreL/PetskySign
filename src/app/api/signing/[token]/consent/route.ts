@@ -21,6 +21,7 @@ import {
   verificationRequiredResponse,
   verifiedMethodsForRequest,
 } from "@/lib/signing-route";
+import { getIpLocation } from "@/lib/petsky/location";
 import { tr } from "@/lib/petsky/locale";
 
 type ConsentRouteContext = {
@@ -55,6 +56,7 @@ export async function POST(request: Request, context: ConsentRouteContext) {
         database: getDb(),
         requestMeta: {
           ipAddress: getClientIpAddress(request.headers),
+          location: getIpLocation(request.headers),
           userAgent: getRequestUserAgent(request.headers),
         },
         verifiedMethods: verifiedMethodsForRequest(token, request),

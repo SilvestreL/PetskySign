@@ -21,6 +21,7 @@ import {
   getClientIpAddress,
   getRequestUserAgent,
 } from "@/lib/security/request";
+import { getIpLocation } from "@/lib/petsky/location";
 import { tr } from "@/lib/petsky/locale";
 
 type SigningSubmitRouteContext = {
@@ -57,6 +58,7 @@ export async function POST(
       verifiedMethods: verifiedMethodsForRequest(token, request),
       requestMeta: {
         ipAddress: getClientIpAddress(request.headers),
+        location: getIpLocation(request.headers),
         userAgent: getRequestUserAgent(request.headers),
       },
     });

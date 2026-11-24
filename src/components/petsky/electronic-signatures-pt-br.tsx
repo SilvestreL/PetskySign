@@ -47,9 +47,9 @@ export function ElectronicSignaturesPtBrPage({
         <p>
           É uma assinatura eletrônica sem certificado ICP-Brasil, comprovada
           pelo histórico do que aconteceu (abertura, aceite do termo,
-          assinatura, com data, hora, IP e navegador) e por um selo digital no
-          documento final. Ela vale entre as partes que a aceitam, conforme o
-          art. 10, § 2º, da MP 2.200-2/2001 e a Lei 14.063/2020.
+          assinatura, com data, hora, IP, navegador e localização) e por um selo
+          digital no documento final. Ela vale entre as partes que a aceitam,
+          conforme o art. 10, § 2º, da MP 2.200-2/2001.
         </p>
       </section>
 

@@ -23,6 +23,7 @@ import {
 } from "@/lib/signing";
 import { verifiedMethodsForRequest } from "@/lib/signing-route";
 import { resolveAppUrl } from "@/lib/utils/env";
+import { getIpLocation } from "@/lib/petsky/location";
 import { tr } from "@/lib/petsky/locale";
 
 type VerifyRouteContext = {
@@ -57,6 +58,7 @@ export async function POST(request: Request, context: VerifyRouteContext) {
         database: getDb(),
         requestMeta: {
           ipAddress: getClientIpAddress(request.headers),
+          location: getIpLocation(request.headers),
           userAgent: getRequestUserAgent(request.headers),
         },
         verifiedMethods: verifiedMethodsForRequest(token, request),

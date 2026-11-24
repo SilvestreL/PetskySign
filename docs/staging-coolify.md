@@ -49,17 +49,18 @@ openssl rand -hex 16   # SETUP_TOKEN
 4. **Limites:** 1 CPU e 1,5 GB de RAM bastam para staging.
 5. **Variáveis:**
 
-   | Variável                     | Valor                                   | Observação                                                              |
-   | ---------------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-   | `NEXT_PUBLIC_APP_LOCALE`     | `pt-BR`                                 | Marque **Build Variable**: é lida no build                              |
-   | `APP_URL`                    | `https://assinar-staging.petsky.com.br` |                                                                         |
-   | `DATABASE_URL`               | a URL interna do passo 1                |                                                                         |
-   | `BETTER_AUTH_SECRET`         | o `openssl rand -hex 32`                | **Obrigatória.** Sem ela, o selo dos PDFs falha                         |
-   | `RESEND_API_KEY`             | a chave da Resend                       |                                                                         |
-   | `RETENTION_JOB_SECRET`       | o `openssl rand -hex 24`                | Fecha `/api/internal/retention` e `/api/internal/webhooks`              |
-   | `SETUP_TOKEN`                | o `openssl rand -hex 16`                | Protege o `/setup` da primeira vez                                      |
-   | `TRUSTED_CLIENT_IP_HEADER`   | `cf-connecting-ip`                      | Atrás do Cloudflare, o único IP confiável para o histórico e os limites |
-   | `PETSKY_COMPANY_DAILY_LIMIT` | `50`                                    | Opcional                                                                |
+   | Variável                     | Valor                                   | Observação                                                                                                 |
+   | ---------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_APP_LOCALE`     | `pt-BR`                                 | Marque **Build Variable**: é lida no build                                                                 |
+   | `APP_URL`                    | `https://assinar-staging.petsky.com.br` |                                                                                                            |
+   | `DATABASE_URL`               | a URL interna do passo 1                |                                                                                                            |
+   | `BETTER_AUTH_SECRET`         | o `openssl rand -hex 32`                | **Obrigatória.** Sem ela, o selo dos PDFs falha                                                            |
+   | `RESEND_API_KEY`             | a chave da Resend                       |                                                                                                            |
+   | `RETENTION_JOB_SECRET`       | o `openssl rand -hex 24`                | Fecha `/api/internal/retention` e `/api/internal/webhooks`                                                 |
+   | `SETUP_TOKEN`                | o `openssl rand -hex 16`                | Protege o `/setup` da primeira vez                                                                         |
+   | `TRUSTED_CLIENT_IP_HEADER`   | `cf-connecting-ip`                      | Atrás do Cloudflare, o único IP confiável para o histórico e os limites                                    |
+   | `TRUSTED_LOCATION_HEADERS`   | `cloudflare`                            | Grava a localização aproximada pelo IP. Só com a regra "Add visitor location headers" ligada no Cloudflare |
+   | `PETSKY_COMPANY_DAILY_LIMIT` | `50`                                    | Opcional                                                                                                   |
 
    Sem `SEAL_P12_*`, o selo é autogerado. Para staging isso basta; o e-CNPJ entra na produção.
 

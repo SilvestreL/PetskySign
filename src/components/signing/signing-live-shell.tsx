@@ -451,6 +451,68 @@ function buildSigningSubmissionPayload(
   };
 }
 
+/**
+ * PetskySign: asks the browser for the device's location, as optional
+ * evidence for the certificate. Never blocks the signature: a refusal, an
+ * error or no answer within a few seconds sends the status instead.
+ */
+async function readDeviceLocation(): Promise<
+  | {
+      deviceLocation: { accuracy: number; latitude: number; longitude: number };
+    }
+  | { deviceLocationStatus: "denied" | "unavailable" }
+> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return { deviceLocationStatus: "unavailable" };
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (
+      value:
+        | {
+            deviceLocation: {
+              accuracy: number;
+              latitude: number;
+              longitude: number;
+            };
+          }
+        | { deviceLocationStatus: "denied" | "unavailable" },
+    ) => {
+      if (!settled) {
+        settled = true;
+        resolve(value);
+      }
+    };
+    // The permission prompt waits for the person; do not wait forever.
+    const timer = window.setTimeout(
+      () => finish({ deviceLocationStatus: "unavailable" }),
+      10_000,
+    );
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        window.clearTimeout(timer);
+        finish({
+          deviceLocation: {
+            accuracy: Math.min(position.coords.accuracy, 100_000),
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+        });
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        finish({
+          deviceLocationStatus:
+            error.code === error.PERMISSION_DENIED ? "denied" : "unavailable",
+        });
+      },
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
+    );
+  });
+}
+
 /** Why a signer came back from their signing provider without signing. */
 export type ProviderSignatureProblem =
   "cancelled" | "expired" | "failed" | "name";
@@ -656,11 +718,16 @@ export function SigningLiveShell({
     setSubmitError(null);
 
     try {
+      // Only for signatures made here: a provider signature has its own proof.
+      const deviceLocation = providerSignature
+        ? {}
+        : await readDeviceLocation();
       const response = await fetch(
         providerSignature?.startUrl ?? record.submitUrl,
         {
           body: JSON.stringify({
             ...buildSigningSubmissionPayload(record, enteredValues),
+            ...deviceLocation,
             ...(part11
               ? {
                   reauthentication: {
@@ -1250,6 +1317,13 @@ export function SigningLiveShell({
             <p className="text-sm leading-6 text-(--secondary)">
               {tr(
                 "By clicking Finish, you confirm that your electronic signature is intended to be binding for this document.",
+              )}
+            </p>
+          )}
+          {providerSignature ? null : (
+            <p className="text-xs leading-5 text-(--tertiary)">
+              {tr(
+                "Your browser may ask to share your location. It is optional: it adds the place where you signed to the certificate, and you can sign without it.",
               )}
             </p>
           )}

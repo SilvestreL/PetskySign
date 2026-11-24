@@ -19,6 +19,7 @@ import {
   SigningVerificationRequiredError,
   getSigningPayloadForToken,
 } from "@/lib/signing";
+import { getIpLocation } from "@/lib/petsky/location";
 
 type SignPageProps = {
   params: Promise<{
@@ -51,6 +52,7 @@ export default async function SignPage({
       database: getDb(),
       requestMeta: {
         ipAddress: getClientIpAddress(requestHeaders),
+        location: getIpLocation(requestHeaders),
         userAgent: requestHeaders.get("user-agent")?.trim() ?? null,
       },
       verifiedMethods: verifiedMethodsFromCookies(

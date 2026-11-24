@@ -37,6 +37,7 @@ import { encode as encodeQr } from "uqr";
 import { isPlaceholderEmail } from "../petsky/placeholder-email.ts";
 import { getDb } from "../db/connection.ts";
 import { getDocumentBranding } from "../petsky/document-branding.ts";
+import { describeLocation } from "../petsky/location.ts";
 
 const DEFAULT_AUDIT_PAGE_SIZE = {
   height: 792,
@@ -950,9 +951,12 @@ function buildAuditLines(input: {
     );
 
     for (const detail of signedLine
-      ? event.userAgent
-        ? [`${tr("browser")} ${event.userAgent.slice(0, 160)}`]
-        : []
+      ? [
+          ...(event.userAgent
+            ? [`${tr("browser")} ${event.userAgent.slice(0, 160)}`]
+            : []),
+          ...describeLocation(event.metadata, tr),
+        ]
       : describeEventEvidence(event)) {
       pushParagraph(detail, input.fonts.regular, smallFontSize + 0.5, {
         color: CERT_MUTED,
@@ -1021,7 +1025,7 @@ function buildAuditLines(input: {
   );
   pushParagraph(
     tr(
-      "Electronic signatures have legal validity in Brazil under MP 2.200-2/2001 and Law 14.063/2020.",
+      "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001, when the parties accept the means used, as the signer did here.",
     ),
     input.fonts.bold,
     bodyFontSize,
@@ -1257,6 +1261,8 @@ function describeEventEvidence(event: AuditEventRecord): string[] {
         .join(" | "),
     );
   }
+
+  details.push(...describeLocation(metadata, tr));
 
   if (typeof metadata.timezoneOffsetMinutes === "number") {
     const offset = -metadata.timezoneOffsetMinutes;
