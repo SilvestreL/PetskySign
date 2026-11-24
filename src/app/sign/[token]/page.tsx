@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -20,6 +21,9 @@ import {
   getSigningPayloadForToken,
 } from "@/lib/signing";
 import { getIpLocation } from "@/lib/petsky/location";
+import { getLinkPreviewForToken } from "@/lib/petsky/link-preview";
+import { tr } from "@/lib/petsky/locale";
+import { resolveAppUrl } from "@/lib/utils/env";
 
 type SignPageProps = {
   params: Promise<{
@@ -27,6 +31,55 @@ type SignPageProps = {
   }>;
   searchParams: Promise<{ signatureProblem?: string | string[] }>;
 };
+
+// PetskySign: what WhatsApp and the like show for the link: the document,
+// who sent it and their logo. Reading it records nothing.
+export async function generateMetadata({
+  params,
+}: Pick<SignPageProps, "params">): Promise<Metadata> {
+  const { token } = await params;
+  const preview = await getLinkPreviewForToken(token, getDb()).catch(
+    () => null,
+  );
+
+  if (!preview) {
+    return { robots: { follow: false, index: false } };
+  }
+
+  const sender = preview.name?.trim() || "Petsky";
+  const description = tr(
+    "{sender} sent you this document to sign electronically.",
+    { sender },
+  );
+  const appUrl = resolveAppUrl();
+  const image = appUrl
+    ? new URL(
+        `/api/brand/link-preview/${encodeURIComponent(preview.envelopeId)}`,
+        appUrl,
+      ).toString()
+    : undefined;
+
+  return {
+    description,
+    openGraph: {
+      description,
+      images: image
+        ? [{ alt: sender, height: 630, url: image, width: 1200 }]
+        : undefined,
+      siteName: sender,
+      title: preview.title,
+      type: "website",
+    },
+    robots: { follow: false, index: false },
+    title: `${preview.title} - ${sender}`,
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      description,
+      images: image ? [image] : undefined,
+      title: preview.title,
+    },
+  };
+}
 
 const SIGNATURE_PROBLEMS = ["cancelled", "expired", "failed", "name"] as const;
 

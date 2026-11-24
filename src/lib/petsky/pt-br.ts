@@ -416,6 +416,10 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Your browser may ask to share your location. It is optional: it adds the place where you signed to the certificate, and you can sign without it.":
     "Seu navegador pode pedir sua localização. É opcional: ela entra no certificado como o lugar onde você assinou, e você pode assinar sem ela.",
   "Electronic signature": "Assinatura eletrônica",
+  "{sender} sent you this document to sign electronically.":
+    "{sender} enviou este documento para você assinar eletronicamente.",
+  "Sent you a document to sign": "Enviou um documento para você assinar",
+  "Secure electronic signature": "Assinatura eletrônica segura",
   "{count} pages - Times in Brasília time":
     "{count} páginas - Datas e horários de Brasília",
   "{count} pages - Times in UTC": "{count} páginas - Datas e horários em UTC",

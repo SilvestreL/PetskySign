@@ -115,6 +115,7 @@ import {
   type SignerCheckState,
 } from "./signer-checks.ts";
 import { intlLocale, tr } from "./petsky/locale.ts";
+import { isLinkPreviewBot } from "./petsky/link-preview.ts";
 import {
   IDENTITY_MAX_ATTEMPTS,
   cpfMatches,
@@ -2119,7 +2120,11 @@ export async function getSigningPayloadForToken(
   const storageService = createStorageService();
   const branding = await getBranding();
 
-  await recordViewedEventOnce(context, requestMeta, database);
+  // PetskySign: a robot drawing the link's preview (WhatsApp...) is not the
+  // signer opening it.
+  if (!isLinkPreviewBot(requestMeta.userAgent)) {
+    await recordViewedEventOnce(context, requestMeta, database);
+  }
 
   const signerNamesById = new Map(
     context.signers.map((signer) => [signer.id, signer.name] as const),
