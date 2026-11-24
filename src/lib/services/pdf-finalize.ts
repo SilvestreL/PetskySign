@@ -31,7 +31,9 @@ import {
   type StorageObjectRef,
   type StorageService,
 } from "./storage.ts";
-import { tr } from "../petsky/locale.ts";
+import { appLocale, displayTimeZone, tr } from "../petsky/locale.ts";
+import { resolveAppUrl } from "../utils/env.ts";
+import { encode as encodeQr } from "uqr";
 import { isPlaceholderEmail } from "../petsky/placeholder-email.ts";
 
 const DEFAULT_AUDIT_PAGE_SIZE = {
@@ -191,12 +193,54 @@ type WrappedLine = {
   text: string;
 };
 
+/**
+ * PetskySign: how a certificate line is drawn (see appendAuditTrailPages),
+ * in the layout of D4Sign's certificate: sections with a rule above, a
+ * check mark before each signer, bold event times, quieter details.
+ */
+type CertificateLine = WrappedLine & {
+  color?: [number, number, number];
+  gapAfter?: number;
+  gapBefore?: number;
+  icon?: "check" | "cross" | "dot";
+  indent?: number;
+  /** A thin rule above the line: a new section starts here. */
+  rule?: boolean;
+  /** Narrower, to leave room for the QR code on the first page. */
+  besideQr?: boolean;
+};
+
+const CERT_INK: [number, number, number] = [0.094, 0.165, 0.227];
+const CERT_MUTED: [number, number, number] = [0.36, 0.42, 0.5];
+const CERT_ACCENT: [number, number, number] = [0.176, 0.435, 0.82];
+const CERT_SUCCESS: [number, number, number] = [0.086, 0.44, 0.29];
+const CERT_DANGER: [number, number, number] = [0.71, 0.14, 0.09];
+const CERT_QR_SIZE = 76;
+
 function formatAuditTimestamp(timestamp: number | null | undefined): string {
   if (typeof timestamp !== "number") {
     return "—";
   }
 
   const value = new Date(timestamp * 1000);
+
+  // PetskySign: Brasília time in pt-BR, as D4Sign's certificate; the page
+  // header says so. ISO in UTC otherwise, as before.
+  if (appLocale() === "pt-BR") {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "short",
+      second: "2-digit",
+      timeZone: displayTimeZone(),
+      year: "numeric",
+    })
+      .format(value)
+      .replace(" de ", " ")
+      .replace(" de ", " ")
+      .replace(".", "");
+  }
 
   return value.toISOString().replace(".000Z", " UTC");
 }
@@ -665,32 +709,47 @@ function buildAuditLines(input: {
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
 }) {
-  const titleFontSize = 18;
-  const sectionFontSize = 11;
-  const bodyFontSize = 9.25;
-  const lines: Array<WrappedLine & { gapAfter?: number; gapBefore?: number }> =
-    [];
+  const titleFontSize = 15;
+  const sectionFontSize = 12;
+  const nameFontSize = 10.5;
+  const bodyFontSize = 9;
+  const smallFontSize = 7.75;
+  const lines: CertificateLine[] = [];
 
   const pushParagraph = (
     text: string,
     font: TextFace,
     size: number,
-    options: { gapAfter?: number; gapBefore?: number } = {},
+    options: Omit<CertificateLine, "font" | "size" | "text"> = {},
   ) => {
-    const wrapped = wrapText(font, size, input.maxWidth, text);
-
-    if (wrapped.length === 0) {
-      return;
-    }
+    const indent = options.indent ?? 0;
+    const width =
+      input.maxWidth - indent - (options.besideQr ? CERT_QR_SIZE + 16 : 0);
+    const wrapped = wrapText(font, size, width, text);
 
     wrapped.forEach((line, index) => {
+      const first = index === 0;
+      const last = index === wrapped.length - 1;
+
       lines.push({
         ...line,
-        gapAfter: index === wrapped.length - 1 ? options.gapAfter : undefined,
-        gapBefore: index === 0 ? options.gapBefore : undefined,
+        besideQr: options.besideQr,
+        color: options.color,
+        gapAfter: last ? options.gapAfter : undefined,
+        gapBefore: first ? options.gapBefore : undefined,
+        icon: first ? options.icon : undefined,
+        indent,
+        rule: first ? options.rule : undefined,
       });
     });
   };
+  const section = (title: string) =>
+    pushParagraph(title, input.fonts.bold, sectionFontSize, {
+      color: CERT_INK,
+      gapAfter: 8,
+      gapBefore: 16,
+      rule: true,
+    });
 
   const terminalTimestamp = resolveTerminalTimestamp(
     input.envelope,
@@ -702,99 +761,94 @@ function buildAuditLines(input: {
     terminalTimestamp,
   });
 
+  // The document: its title, code and status, beside the QR code.
   pushParagraph(
     getCertificateTitle(input.envelope),
     input.fonts.bold,
-    titleFontSize,
-    {
-      gapAfter: 8,
-    },
+    smallFontSize,
+    { besideQr: true, color: CERT_ACCENT, gapAfter: 4 },
   );
+  pushParagraph(input.envelope.title, input.fonts.bold, titleFontSize, {
+    besideQr: true,
+    color: CERT_INK,
+    gapAfter: 4,
+  });
   pushParagraph(
     tr("Envelope ID: {id}", { id: input.envelope.id }),
     input.fonts.regular,
     bodyFontSize,
+    { besideQr: true, color: CERT_MUTED },
   );
   pushParagraph(
     tr("Document title: {title}", { title: input.envelope.title }),
     input.fonts.regular,
     bodyFontSize,
+    { besideQr: true, color: CERT_MUTED },
   );
-  pushParagraph(
-    tr("Source PDF: {file}", { file: input.envelope.sourcePdfFilename }),
-    input.fonts.regular,
-    bodyFontSize,
-  );
-  pushParagraph(
-    tr("Source document hash: {hash}", { hash: input.envelope.sourcePdfHash }),
-    input.fonts.regular,
-    bodyFontSize,
-  );
-  if (input.signedPdfSha256) {
-    pushParagraph(
-      tr("Signed document SHA-256: {hash}", { hash: input.signedPdfSha256 }),
-      input.fonts.regular,
-      bodyFontSize,
-    );
-  }
-
-  if (input.auditFingerprint) {
-    pushParagraph(
-      tr("Audit trail fingerprint (SHA-256): {hash}", {
-        hash: input.auditFingerprint,
-      }),
-      input.fonts.regular,
-      bodyFontSize,
-    );
-  }
-
   pushParagraph(
     tr("Status: {status}", {
       status: getEnvelopeStatusLabel(input.envelope.status),
     }),
     input.fonts.regular,
     bodyFontSize,
+    { besideQr: true, color: CERT_MUTED },
   );
   pushParagraph(
     `${getTerminalTimestampLabel(input.envelope)}: ${formatAuditTimestamp(terminalTimestamp)}`,
     input.fonts.regular,
     bodyFontSize,
-    {
-      gapAfter: 10,
-    },
+    { besideQr: true, color: CERT_MUTED, gapAfter: 10 },
   );
 
-  pushParagraph(tr("Signers"), input.fonts.bold, sectionFontSize, {
-    gapAfter: 4,
-  });
+  section(tr("Signers"));
 
   for (const signer of input.signers) {
     const actionLabel = getSignerCertificateActionLabel(input.envelope, signer);
-    const signerLabel =
-      input.redactForRecipients || isPlaceholderEmail(signer.email)
-        ? `${signer.signOrder}. ${signer.name} | ${actionLabel}`
-        : `${signer.signOrder}. ${signer.name} <${signer.email}> | ${actionLabel}`;
+    const showEmail =
+      !input.redactForRecipients && !isPlaceholderEmail(signer.email);
 
-    pushParagraph(signerLabel, input.fonts.regular, bodyFontSize);
+    pushParagraph(
+      `${signer.signOrder}. ${signer.name}`,
+      input.fonts.bold,
+      nameFontSize,
+      {
+        color: CERT_INK,
+        gapBefore: 6,
+        icon:
+          signer.status === "signed"
+            ? "check"
+            : signer.status === "declined"
+              ? "cross"
+              : "dot",
+        indent: 20,
+      },
+    );
+    pushParagraph(
+      showEmail ? `<${signer.email}> | ${actionLabel}` : actionLabel,
+      input.fonts.regular,
+      bodyFontSize,
+      { color: CERT_MUTED, indent: 20 },
+    );
 
     for (const detail of describeSignerEvidence(
       signer,
       input.auditEvents,
       Boolean(input.redactForRecipients),
     )) {
-      pushParagraph(`   ${detail}`, input.fonts.regular, bodyFontSize);
+      pushParagraph(detail, input.fonts.regular, smallFontSize + 0.5, {
+        color: CERT_MUTED,
+        indent: 20,
+      });
     }
   }
 
   if (input.copyRecipients && input.copyRecipients.length > 0) {
-    pushParagraph(tr("Copy recipients"), input.fonts.bold, sectionFontSize, {
-      gapAfter: 4,
-      gapBefore: 10,
-    });
+    section(tr("Copy recipients"));
     pushParagraph(
       tr("Sent a copy of the finished document. They did not sign it."),
       input.fonts.regular,
       bodyFontSize,
+      { color: CERT_MUTED, gapAfter: 4 },
     );
 
     for (const recipient of input.copyRecipients) {
@@ -804,14 +858,12 @@ function buildAuditLines(input: {
           : `${recipient.name} <${recipient.email}>`,
         input.fonts.regular,
         bodyFontSize,
+        { color: CERT_INK, icon: "dot", indent: 20 },
       );
     }
   }
 
-  pushParagraph(tr("Audit events"), input.fonts.bold, sectionFontSize, {
-    gapAfter: 4,
-    gapBefore: 10,
-  });
+  section(tr("Audit events"));
 
   for (const event of auditEvents) {
     const actorLabel = describeAuditActor(event);
@@ -821,31 +873,85 @@ function buildAuditLines(input: {
         : auditEventLabel(event.event);
 
     pushParagraph(
-      `${formatAuditTimestamp(event.createdAt)} | ${eventLabel} | ${actorLabel}`,
+      formatAuditTimestamp(event.createdAt),
+      input.fonts.bold,
+      bodyFontSize,
+      { color: CERT_INK, gapBefore: 6 },
+    );
+    pushParagraph(
+      appLocale() === "pt-BR"
+        ? `${eventLabel.charAt(0).toUpperCase()}${eventLabel.slice(1)} ${tr("by")} ${actorLabel}`
+        : `${eventLabel} | ${actorLabel}`,
       input.fonts.regular,
       bodyFontSize,
+      { color: CERT_INK },
     );
 
     for (const detail of describeEventEvidence(event)) {
-      pushParagraph(`   ${detail}`, input.fonts.regular, bodyFontSize);
+      pushParagraph(detail, input.fonts.regular, smallFontSize + 0.5, {
+        color: CERT_MUTED,
+        indent: 10,
+      });
     }
   }
 
+  section(tr("Document hashes"));
   pushParagraph(
-    tr("How to check this record"),
-    input.fonts.bold,
-    sectionFontSize,
-    {
-      gapAfter: 4,
-      gapBefore: 10,
-    },
+    tr("Source PDF: {file}", { file: input.envelope.sourcePdfFilename }),
+    input.fonts.regular,
+    bodyFontSize,
+    { color: CERT_MUTED },
   );
+  pushParagraph(
+    tr("Source document hash: {hash}", { hash: input.envelope.sourcePdfHash }),
+    input.fonts.regular,
+    smallFontSize,
+    { color: CERT_INK },
+  );
+
+  if (input.signedPdfSha256) {
+    pushParagraph(
+      tr("Signed document SHA-256: {hash}", { hash: input.signedPdfSha256 }),
+      input.fonts.regular,
+      smallFontSize,
+      { color: CERT_INK },
+    );
+  }
+
+  if (input.auditFingerprint) {
+    pushParagraph(
+      tr("Audit trail fingerprint (SHA-256): {hash}", {
+        hash: input.auditFingerprint,
+      }),
+      input.fonts.regular,
+      smallFontSize,
+      { color: CERT_INK },
+    );
+  }
+
+  pushParagraph(
+    tr("This record belongs only to the documents with the hashes above."),
+    input.fonts.regular,
+    smallFontSize,
+    { color: CERT_MUTED, gapBefore: 4 },
+  );
+
+  section(tr("How to check this record"));
   pushParagraph(
     tr(
       "The signed document and this certificate are each sealed with a digital signature. A PDF reader shows the seal as valid only if the file has not changed since it was sealed. The SHA-256 values above can also be checked on this site's Verify page.",
     ),
     input.fonts.regular,
     bodyFontSize,
+    { color: CERT_MUTED, gapAfter: 8 },
+  );
+  pushParagraph(
+    tr(
+      "Electronic signatures have legal validity in Brazil under MP 2.200-2/2001 and Law 14.063/2020.",
+    ),
+    input.fonts.bold,
+    bodyFontSize,
+    { color: CERT_INK },
   );
 
   return lines;
@@ -1193,6 +1299,8 @@ function appendAuditTrailPages(input: {
     regular: TextFace;
   };
   pdfDocument: PDFDocument;
+  /** PetskySign: the name in each page's header. */
+  productName?: string;
   redactForRecipients?: boolean;
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
@@ -1207,8 +1315,11 @@ function appendAuditTrailPages(input: {
       }
     : DEFAULT_AUDIT_PAGE_SIZE;
   const margin = 48;
+  // PetskySign: room for the header and footer drawn on every page.
+  const headerHeight = 64;
+  const footerHeight = 30;
   const maxWidth = pageSize.width - margin * 2;
-  const lineHeightMultiplier = 1.24;
+  const lineHeightMultiplier = 1.32;
   const lines = buildAuditLines({
     auditEvents: input.auditEvents,
     auditFingerprint: input.auditFingerprint,
@@ -1221,30 +1332,264 @@ function appendAuditTrailPages(input: {
     signedPdfSha256: input.signedPdfSha256,
     signers: input.signers,
   });
+  const pages: PDFPage[] = [];
+  const top = pageSize.height - margin - headerHeight;
+  const bottom = margin + footerHeight;
+  const newPage = () => {
+    const created = input.pdfDocument.addPage([
+      pageSize.width,
+      pageSize.height,
+    ]);
 
-  let page = input.pdfDocument.addPage([pageSize.width, pageSize.height]);
-  let cursorY = pageSize.height - margin;
+    pages.push(created);
+    return created;
+  };
+
+  let page = newPage();
+  let cursorY = top;
+  const contentTop = cursorY;
 
   for (const line of lines) {
     cursorY -= line.gapBefore ?? 0;
 
     const lineHeight = line.size * lineHeightMultiplier;
 
-    if (cursorY - lineHeight < margin) {
-      page = input.pdfDocument.addPage([pageSize.width, pageSize.height]);
-      cursorY = pageSize.height - margin;
+    if (cursorY - lineHeight < bottom) {
+      page = newPage();
+      cursorY = top;
+    }
+
+    if (line.rule) {
+      page.drawLine({
+        color: rgb(0.85, 0.88, 0.92),
+        end: { x: pageSize.width - margin, y: cursorY + 6 },
+        start: { x: margin, y: cursorY + 6 },
+        thickness: 0.8,
+      });
+      cursorY -= 6;
+    }
+
+    const x = margin + (line.indent ?? 0);
+    const baseline = cursorY - line.size;
+
+    if (line.icon) {
+      drawCertificateIcon(
+        page,
+        line.icon,
+        margin + 7,
+        baseline + line.size * 0.35,
+      );
     }
 
     line.font.drawText(page, line.text, {
-      color: rgb(0.14, 0.14, 0.14),
+      color: rgb(...(line.color ?? CERT_INK)),
       size: line.size,
-      x: margin,
-      y: cursorY - line.size,
+      x,
+      y: baseline,
     });
 
     cursorY -= lineHeight;
     cursorY -= line.gapAfter ?? 0;
   }
+
+  // The QR code on the first page, beside the document's title: it opens
+  // the page where anyone can check a copy.
+  const verifyUrl = `${(resolveAppUrl() ?? "").replace(/\/+$/, "")}/verify`;
+
+  if (verifyUrl.startsWith("http")) {
+    drawQrCode(
+      pages[0]!,
+      verifyUrl,
+      pageSize.width - margin - CERT_QR_SIZE,
+      contentTop - CERT_QR_SIZE,
+      CERT_QR_SIZE,
+    );
+  }
+
+  // Page chrome, now that the page count is known.
+  const generatedAt = formatAuditTimestamp(Math.floor(Date.now() / 1000));
+  const productName = input.productName?.trim() || "Petsky";
+
+  pages.forEach((current, index) => {
+    const { height, width } = {
+      height: pageSize.height,
+      width: pageSize.width,
+    };
+
+    // Frame.
+    current.drawRectangle({
+      borderColor: rgb(...CERT_ACCENT),
+      borderWidth: 1.4,
+      height: height - 28,
+      width: width - 28,
+      x: 14,
+      y: 14,
+    });
+    current.drawRectangle({
+      borderColor: rgb(0.8, 0.87, 0.97),
+      borderWidth: 0.6,
+      height: height - 40,
+      width: width - 40,
+      x: 20,
+      y: 20,
+    });
+
+    // Header: the product on the left, the page count and time zone right.
+    const headerY = height - margin - 16;
+
+    input.fonts.bold.drawText(current, productName, {
+      color: rgb(...CERT_ACCENT),
+      size: 16,
+      x: margin,
+      y: headerY,
+    });
+    input.fonts.regular.drawText(current, tr("Electronic signature"), {
+      color: rgb(...CERT_MUTED),
+      size: 7.5,
+      x: margin,
+      y: headerY - 12,
+    });
+
+    const rightLines = [
+      appLocale() === "pt-BR"
+        ? pages.length === 1
+          ? tr("1 page - Times in Brasília time")
+          : tr("{count} pages - Times in Brasília time", {
+              count: pages.length,
+            })
+        : pages.length === 1
+          ? tr("1 page - Times in UTC")
+          : tr("{count} pages - Times in UTC", { count: pages.length }),
+      tr("Certificate generated {date}", { date: generatedAt }),
+    ];
+
+    rightLines.forEach((text, lineIndex) => {
+      const size = 7.5;
+      const face = lineIndex === 0 ? input.fonts.bold : input.fonts.regular;
+
+      face.drawText(current, text, {
+        color: rgb(...CERT_MUTED),
+        size,
+        x: width - margin - face.widthOfTextAtSize(text, size),
+        y: headerY + 4 - lineIndex * 11,
+      });
+    });
+
+    current.drawLine({
+      color: rgb(...CERT_ACCENT),
+      end: { x: width - margin, y: height - margin - headerHeight + 22 },
+      start: { x: margin, y: height - margin - headerHeight + 22 },
+      thickness: 1,
+    });
+
+    // Footer: the document code and the page.
+    const footerY = margin - 6;
+    const code = tr("Envelope ID: {id}", { id: input.envelope.id });
+    const pageLabel = tr("Page {page} of {count}", {
+      count: pages.length,
+      page: index + 1,
+    });
+
+    input.fonts.regular.drawText(current, code, {
+      color: rgb(...CERT_MUTED),
+      size: 7,
+      x: margin,
+      y: footerY,
+    });
+    input.fonts.regular.drawText(current, pageLabel, {
+      color: rgb(...CERT_MUTED),
+      size: 7,
+      x: width - margin - input.fonts.regular.widthOfTextAtSize(pageLabel, 7),
+      y: footerY,
+    });
+  });
+}
+
+/** A check, a cross or a dot in a small circle, before a signer's name. */
+function drawCertificateIcon(
+  page: PDFPage,
+  icon: NonNullable<CertificateLine["icon"]>,
+  centerX: number,
+  centerY: number,
+) {
+  const color =
+    icon === "check"
+      ? CERT_SUCCESS
+      : icon === "cross"
+        ? CERT_DANGER
+        : CERT_MUTED;
+
+  if (icon === "dot") {
+    page.drawCircle({
+      color: rgb(...color),
+      size: 2.2,
+      x: centerX,
+      y: centerY,
+    });
+    return;
+  }
+
+  page.drawCircle({
+    borderColor: rgb(...color),
+    borderWidth: 1.2,
+    size: 6.5,
+    x: centerX,
+    y: centerY,
+  });
+
+  const stroke = { color: rgb(...color), thickness: 1.4 };
+
+  if (icon === "check") {
+    page.drawLine({
+      ...stroke,
+      end: { x: centerX - 0.6, y: centerY - 2.6 },
+      start: { x: centerX - 3, y: centerY - 0.2 },
+    });
+    page.drawLine({
+      ...stroke,
+      end: { x: centerX + 3.4, y: centerY + 2.6 },
+      start: { x: centerX - 0.6, y: centerY - 2.6 },
+    });
+  } else {
+    page.drawLine({
+      ...stroke,
+      end: { x: centerX + 2.4, y: centerY + 2.4 },
+      start: { x: centerX - 2.4, y: centerY - 2.4 },
+    });
+    page.drawLine({
+      ...stroke,
+      end: { x: centerX + 2.4, y: centerY - 2.4 },
+      start: { x: centerX - 2.4, y: centerY + 2.4 },
+    });
+  }
+}
+
+/** A QR code drawn as squares, so nothing but pdf-lib is needed. */
+function drawQrCode(
+  page: PDFPage,
+  value: string,
+  x: number,
+  y: number,
+  size: number,
+) {
+  const { data, size: modules } = encodeQr(value, { border: 1, ecc: "M" });
+  const cell = size / modules;
+
+  page.drawRectangle({ color: rgb(1, 1, 1), height: size, width: size, x, y });
+
+  data.forEach((row, rowIndex) => {
+    row.forEach((on, columnIndex) => {
+      if (on) {
+        page.drawRectangle({
+          color: rgb(...CERT_INK),
+          height: cell + 0.05,
+          width: cell + 0.05,
+          x: x + columnIndex * cell,
+          y: y + size - (rowIndex + 1) * cell,
+        });
+      }
+    });
+  });
 }
 
 /** Someone sent a copy of the finished document who did not sign it. */
@@ -1356,6 +1701,9 @@ export async function renderEnvelopeCertificatePdf(
     envelope: input.envelope,
     fonts: faces,
     pdfDocument,
+    productName: await getBranding()
+      .then((branding) => branding.productName)
+      .catch(() => "Petsky"),
     redactForRecipients: input.redactForRecipients,
     signedPdfSha256: input.signedPdfSha256,
     signers: input.signers,
