@@ -46,6 +46,26 @@ export type DeviceLocationStatus = z.infer<typeof deviceLocationStatusSchema>;
 
 type LocationEnv = Record<string, string | undefined>;
 
+/**
+ * Cloudflare sends names such as "Maceió" as raw UTF-8 bytes, and header
+ * values are read one byte per character, so they arrive as "MaceiÃ³".
+ * Reads them back as UTF-8 when that is what they are; text that is not
+ * valid UTF-8 (a real Latin-1 name) is left as it came.
+ */
+function fromUtf8Bytes(value: string): string {
+  if (!/[\u0080-\u00ff]/.test(value) || /[^\u0000-\u00ff]/.test(value)) {
+    return value;
+  }
+
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(
+      Buffer.from(value, "latin1"),
+    );
+  } catch {
+    return value;
+  }
+}
+
 function headerText(headers: Headers, name: string): string | null {
   const raw = headers.get(name)?.trim();
 
@@ -56,11 +76,13 @@ function headerText(headers: Headers, name: string): string | null {
   let value = raw;
 
   try {
-    // Cloudflare percent-encodes non-ASCII city names ("S%C3%A3o Paulo").
+    // Some proxies percent-encode non-ASCII names ("S%C3%A3o Paulo").
     value = decodeURIComponent(raw);
   } catch {
     value = raw;
   }
+
+  value = fromUtf8Bytes(value);
 
   // Free text that ends up in the audit trail and the certificate.
   const clean = value.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 80);
@@ -135,7 +157,10 @@ function readNumber(value: unknown): number | null {
 }
 
 function readText(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+  // Rows recorded before fromUtf8Bytes existed show right too.
+  return typeof value === "string" && value.trim()
+    ? fromUtf8Bytes(value.trim())
+    : null;
 }
 
 function coordinates(latitude: number, longitude: number): string {
