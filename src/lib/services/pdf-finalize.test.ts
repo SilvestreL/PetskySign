@@ -795,6 +795,26 @@ test("in pt-BR the signed event is one line, as D4Sign's, IP kept for the signer
   }
 });
 
+test("in the same second, completed comes after signed", async () => {
+  const fixture = await makeFixture();
+  const signed = fixture.auditEvents.find((event) => event.event === "signed")!;
+  const text = (
+    await extractText(
+      await renderEnvelopeCertificatePdf(
+        {
+          auditEvents: [{ ...signed, id: "zzz-signed" }],
+          envelope: { ...fixture.envelope, completedAt: signed.createdAt },
+          signers: fixture.signers,
+        },
+        { seal: saveUnsealed },
+      ),
+    )
+  ).replace(/\s+/g, " ");
+  const events = text.split("Audit events")[1] ?? "";
+
+  assert.ok(events.indexOf("signed |") < events.indexOf("completed |"), events);
+});
+
 test("describeAuditActor names the business for the sender's rows (PetskySign)", () => {
   const event = {
     actorEmail: "api@petsky.example",
