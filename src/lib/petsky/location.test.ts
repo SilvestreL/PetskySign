@@ -110,3 +110,35 @@ test("the certificate says where each location came from", () => {
   );
   assert.deepEqual(describeLocation(null, translate), []);
 });
+
+test("a city sent as raw UTF-8 bytes reads back with its accents", () => {
+  const raw = Buffer.from("Maceió", "utf8").toString("latin1");
+  const headers = new Headers();
+
+  headers.set("cf-ipcity", raw);
+
+  assert.equal(getIpLocation(headers, cloudflare)?.city, "Maceió");
+  assert.equal(
+    getIpLocation(cfHeaders({ "cf-ipcity": "Göttingen" }), cloudflare)?.city,
+    "Göttingen",
+  );
+});
+
+test("the certificate reads back a city recorded as raw UTF-8 bytes", () => {
+  const lines = describeLocation(
+    {
+      location: {
+        ip: {
+          city: Buffer.from("Maceió", "utf8").toString("latin1"),
+          country: "BR",
+          region: "Alagoas",
+          source: "ip",
+        },
+      },
+    },
+    (text, params) =>
+      text.replace(/\{(\w+)\}/g, (_, key: string) => params?.[key] ?? ""),
+  );
+
+  assert.deepEqual(lines, ["Approximate location by IP: Maceió, Alagoas, BR"]);
+});
