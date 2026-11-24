@@ -410,4 +410,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "1 page - Times in Brasília time": "1 página - Datas e horários de Brasília",
   "1 page - Times in UTC": "1 página - Datas e horários em UTC",
   by: "por",
+  "{actor} signed": "{actor} assinou",
+  "CPF given: {cpf}": "CPF informado: {cpf}",
+  "Identity confirmed by: {checks}": "Identidade confirmada por: {checks}",
+  "Signature: {forms}": "Assinatura: {forms}",
 };

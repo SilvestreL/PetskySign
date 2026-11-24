@@ -730,6 +730,71 @@ test("a typical certificate fits on one page, as D4Sign's (PetskySign)", async (
   }
 });
 
+test("in pt-BR the signed event is one line, as D4Sign's, IP kept for the signer (PetskySign)", async () => {
+  const fixture = await makeFixture();
+  const signer = fixture.signers[0]!;
+  const auditEvents: AuditEventRecord[] = [
+    {
+      actorEmail: signer.email,
+      actorType: "signer",
+      createdAt: 1_799_999_800,
+      envelopeId: fixture.envelope.id,
+      event: "verified",
+      id: "v1",
+      metadata: {
+        cpf: "529.***.***-25",
+        declaredName: signer.name,
+        method: "identity",
+        signerId: signer.id,
+        signerName: signer.name,
+      },
+    },
+    ...fixture.auditEvents.map((event) =>
+      event.event === "signed"
+        ? {
+            ...event,
+            metadata: {
+              ...event.metadata,
+              authMethods: ["whatsapp_code", "identity"],
+              signatureMethods: ["typed"],
+            },
+          }
+        : event,
+    ),
+  ];
+  const previous = process.env.NEXT_PUBLIC_APP_LOCALE;
+
+  process.env.NEXT_PUBLIC_APP_LOCALE = "pt-BR";
+
+  try {
+    const text = (
+      await extractText(
+        await renderEnvelopeCertificatePdf(
+          {
+            auditEvents,
+            envelope: fixture.envelope,
+            redactForRecipients: true,
+            signers: fixture.signers,
+          },
+          { seal: saveUnsealed },
+        ),
+      )
+    ).replace(/\s+/g, " ");
+
+    assert.match(
+      text,
+      /assinou - IP: 203\.0\.113\.7 - CPF informado: 529\.\*\*\*\.\*\*\*-25 - Identidade confirmada por: posse do link/,
+    );
+    assert.match(
+      text,
+      /Assinatura: digitada - DATE_ATOM: \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d-03:00/,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_APP_LOCALE;
+    else process.env.NEXT_PUBLIC_APP_LOCALE = previous;
+  }
+});
+
 test("describeAuditActor names the business for the sender's rows (PetskySign)", () => {
   const event = {
     actorEmail: "api@petsky.example",

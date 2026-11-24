@@ -151,7 +151,9 @@ function redactAuditEventForRecipients(
     ...event,
     actorEmail:
       event.actorType === "signer" ? null : (event.actorEmail ?? null),
-    ipAddress: null,
+    // PetskySign: the IP the signature came from stays in the signers' copy
+    // too, as D4Sign's certificate shows it to everyone.
+    ipAddress: event.event === "signed" ? (event.ipAddress ?? null) : null,
     metadata: redactAuditEventMetadataForRecipients(event.metadata ?? null),
     userAgent: null,
   });
@@ -925,16 +927,26 @@ function buildAuditLines(input: {
       bodyFontSize,
       { color: CERT_INK, gapBefore: 4 },
     );
+    const signedLine =
+      appLocale() === "pt-BR" && event.event === "signed"
+        ? describeSignedEvent(event, actorLabel, auditEvents)
+        : null;
+
     pushParagraph(
-      appLocale() === "pt-BR"
-        ? `${eventLabel.charAt(0).toUpperCase()}${eventLabel.slice(1)} ${tr("by")} ${actorLabel}`
-        : `${eventLabel} | ${actorLabel}`,
+      signedLine ??
+        (appLocale() === "pt-BR"
+          ? `${eventLabel.charAt(0).toUpperCase()}${eventLabel.slice(1)} ${tr("by")} ${actorLabel}`
+          : `${eventLabel} | ${actorLabel}`),
       input.fonts.regular,
       bodyFontSize,
       { color: CERT_INK },
     );
 
-    for (const detail of describeEventEvidence(event)) {
+    for (const detail of signedLine
+      ? event.userAgent
+        ? [`${tr("browser")} ${event.userAgent.slice(0, 160)}`]
+        : []
+      : describeEventEvidence(event)) {
       pushParagraph(detail, input.fonts.regular, smallFontSize + 0.5, {
         color: CERT_MUTED,
         indent: 10,
@@ -1309,6 +1321,58 @@ function describeEventEvidence(event: AuditEventRecord): string[] {
   }
 
   return details;
+}
+
+/** "2026-11-24T11:46:47-03:00": the instant in Brasília, as ISO 8601. */
+function formatBrasiliaIso(timestamp: number): string {
+  // Brasília has had no daylight saving time since 2019: always -03:00.
+  return `${new Date((timestamp - 3 * 3600) * 1000).toISOString().slice(0, 19)}-03:00`;
+}
+
+/**
+ * PetskySign: the "signed" event in one line, as D4Sign's certificate has
+ * it: who signed, from which IP, the CPF given, how their identity was
+ * checked, how they signed, and the instant in ISO 8601.
+ */
+function describeSignedEvent(
+  event: AuditEventRecord,
+  actorLabel: string,
+  auditEvents: readonly AuditEventRecord[],
+): string {
+  const metadata = event.metadata ?? {};
+  const signerId =
+    typeof metadata.signerId === "string" ? metadata.signerId : null;
+  const identity = auditEvents.find(
+    (candidate) =>
+      candidate.event === "verified" &&
+      candidate.metadata?.method === "identity" &&
+      (signerId === null || candidate.metadata?.signerId === signerId),
+  );
+  const cpf =
+    typeof identity?.metadata?.cpf === "string" ? identity.metadata.cpf : null;
+  const checks = readStringArray(metadata.authMethods).map((method) =>
+    authenticationLabel(method),
+  );
+  const forms = readStringArray(metadata.signatureMethods).map((method) =>
+    tr(method),
+  );
+
+  return [
+    tr("{actor} signed", { actor: actorLabel }),
+    event.ipAddress ? `IP: ${event.ipAddress}` : null,
+    cpf ? tr("CPF given: {cpf}", { cpf }) : null,
+    tr("Identity confirmed by: {checks}", {
+      checks: [tr("possession of the emailed signing link"), ...checks].join(
+        ", ",
+      ),
+    }),
+    forms.length > 0
+      ? tr("Signature: {forms}", { forms: forms.join(", ") })
+      : null,
+    `DATE_ATOM: ${formatBrasiliaIso(event.createdAt)}`,
+  ]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 function getSignerCertificateActionLabel(
