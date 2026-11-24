@@ -1481,23 +1481,8 @@ function appendAuditTrailPages(input: {
       width: pageSize.width,
     };
 
-    // Frame.
-    current.drawRectangle({
-      borderColor: rgb(...CERT_ACCENT),
-      borderWidth: 1.4,
-      height: height - 28,
-      width: width - 28,
-      x: 14,
-      y: 14,
-    });
-    current.drawRectangle({
-      borderColor: rgb(0.8, 0.87, 0.97),
-      borderWidth: 0.6,
-      height: height - 40,
-      width: width - 40,
-      x: 20,
-      y: 20,
-    });
+    // Frame: the patterned band of a security paper, as D4Sign's.
+    drawSecurityFrame(current, width, height);
 
     // Header: the product on the left, the page count and time zone right.
     const headerY = height - margin - 16;
@@ -1568,6 +1553,91 @@ function appendAuditTrailPages(input: {
       y: footerY,
     });
   });
+}
+
+/**
+ * PetskySign: the patterned band around each page of the certificate, like
+ * the security paper of a notary's document (and D4Sign's certificate): fine
+ * lines crossing at 45 degrees, from green at the bottom left to blue at the
+ * top right, between two thin rules.
+ */
+function drawSecurityFrame(page: PDFPage, width: number, height: number) {
+  const outer = 10;
+  const band = 18;
+  const spacing = 2.6;
+  const green: [number, number, number] = [0.33, 0.7, 0.36];
+  const blue: [number, number, number] = [0.18, 0.47, 0.84];
+  // The four sides of the band, as [x0, y0, x1, y1].
+  const sides: Array<[number, number, number, number]> = [
+    [outer, height - outer - band, width - outer, height - outer],
+    [outer, outer, width - outer, outer + band],
+    [outer, outer + band, outer + band, height - outer - band],
+    [width - outer - band, outer + band, width - outer, height - outer - band],
+  ];
+  const colorAt = (x: number, y: number) => {
+    const t = Math.min(1, Math.max(0, (x + y) / (width + height)));
+
+    return rgb(
+      green[0] + (blue[0] - green[0]) * t,
+      green[1] + (blue[1] - green[1]) * t,
+      green[2] + (blue[2] - green[2]) * t,
+    );
+  };
+
+  for (const [x0, y0, x1, y1] of sides) {
+    page.drawRectangle({
+      color: rgb(0.95, 0.98, 0.96),
+      height: y1 - y0,
+      width: x1 - x0,
+      x: x0,
+      y: y0,
+    });
+
+    // y = x + c, rising lines, kept inside this side.
+    for (let c = y0 - x1; c <= y1 - x0; c += spacing) {
+      const start = Math.max(x0, y0 - c);
+      const end = Math.min(x1, y1 - c);
+
+      if (end > start) {
+        page.drawLine({
+          color: colorAt((start + end) / 2, (start + end) / 2 + c),
+          end: { x: end, y: end + c },
+          start: { x: start, y: start + c },
+          thickness: 0.35,
+        });
+      }
+    }
+
+    // y = -x + c, falling lines.
+    for (let c = x0 + y0; c <= x1 + y1; c += spacing) {
+      const start = Math.max(x0, c - y1);
+      const end = Math.min(x1, c - y0);
+
+      if (end > start) {
+        page.drawLine({
+          color: colorAt((start + end) / 2, c - (start + end) / 2),
+          end: { x: end, y: c - end },
+          start: { x: start, y: c - start },
+          thickness: 0.35,
+        });
+      }
+    }
+  }
+
+  // The rules on both edges of the band.
+  for (const [inset, thickness] of [
+    [outer, 1.2],
+    [outer + band, 1],
+  ] as const) {
+    page.drawRectangle({
+      borderColor: rgb(0.2, 0.52, 0.62),
+      borderWidth: thickness,
+      height: height - inset * 2,
+      width: width - inset * 2,
+      x: inset,
+      y: inset,
+    });
+  }
 }
 
 /** A check, a cross or a dot in a small circle, before a signer's name. */
