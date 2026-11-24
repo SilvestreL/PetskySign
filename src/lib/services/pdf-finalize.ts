@@ -499,9 +499,16 @@ function buildCertificateAuditEvents(input: {
       ? [buildCompletedAuditEvent(input.envelope.id, input.terminalTimestamp)]
       : [];
 
+  // In the same second, "completed" goes last: the last signature finishes
+  // the document, so it never reads as finished before it was signed.
+  const finishing = (event: AuditEventRecord) =>
+    event.event === "completed" ? 1 : 0;
+
   return [...baseAuditEvents, ...terminalAuditEvents].sort(
     (left, right) =>
-      left.createdAt - right.createdAt || left.id.localeCompare(right.id),
+      left.createdAt - right.createdAt ||
+      finishing(left) - finishing(right) ||
+      left.id.localeCompare(right.id),
   );
 }
 
