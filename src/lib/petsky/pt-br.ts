@@ -357,4 +357,26 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "These downloads stay available on this link until {date}. Save your copy.":
     "Os downloads ficam disponíveis neste link até {date}. Guarde sua cópia.",
   "{signers} · {fields}": "{signers} · {fields}",
+  "Type your full name, first and last.":
+    "Digite seu nome completo, com nome e sobrenome.",
+  "That CPF is not valid.": "Esse CPF não é válido.",
+  "Too many wrong tries. Ask whoever sent the document to send it again.":
+    "Muitas tentativas erradas. Peça a quem enviou o documento para mandar de novo.",
+  "That CPF does not match the one the sender has. 1 try is left.":
+    "Esse CPF não confere com o que está no cadastro de quem enviou. Resta 1 tentativa.",
+  "That CPF does not match the one the sender has. {count} tries are left.":
+    "Esse CPF não confere com o que está no cadastro de quem enviou. Restam {count} tentativas.",
+  "The CPF must be the one the sender has for you.":
+    "Use o CPF que está no cadastro de quem enviou o documento.",
+  CPF: "CPF",
+  "As it is on your documents.": "Como está nos seus documentos.",
+  "passed: {check}": "conferido: {check}",
+  "wrong {check}": "errou: {check}",
+  "declared name: {name}; CPF: {cpf}": "nome declarado: {name}; CPF: {cpf}",
+  "full name and CPF matching the sender's records":
+    "nome completo e CPF conferidos com o cadastro de quem enviou",
+  "access code from the sender": "código de acesso passado por quem enviou",
+  "own account, with email address and password to open it":
+    "conta própria, com e-mail e senha para abrir",
+  "one-time code sent by email": "código de uso único enviado por e-mail",
 };

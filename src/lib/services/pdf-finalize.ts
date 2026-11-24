@@ -855,7 +855,15 @@ const AUTHENTICATION_LABELS: Record<string, string> = {
   access_code: "access code from the sender",
   account: "own account, with email address and password to open it",
   email_code: "one-time code sent by email",
+  // PetskySign: see the identity check in signer-checks.ts.
+  identity: "full name and CPF matching the sender's records",
 };
+
+function authenticationLabel(method: string): string {
+  return Object.hasOwn(AUTHENTICATION_LABELS, method)
+    ? tr(AUTHENTICATION_LABELS[method]!)
+    : method;
+}
 
 function readStringArray(value: unknown): string[] {
   return Array.isArray(value)
@@ -992,8 +1000,8 @@ function describeSignerEvidence(
 
   const checks = [
     tr("possession of the emailed signing link"),
-    ...readStringArray(signed?.metadata?.authMethods).map(
-      (method) => AUTHENTICATION_LABELS[method] ?? method,
+    ...readStringArray(signed?.metadata?.authMethods).map((method) =>
+      authenticationLabel(method),
     ),
   ];
 
@@ -1107,8 +1115,22 @@ function describeEventEvidence(event: AuditEventRecord): string[] {
 
   if (event.event === "verified" && typeof metadata.method === "string") {
     details.push(
-      `passed: ${AUTHENTICATION_LABELS[metadata.method] ?? metadata.method}`,
+      tr("passed: {check}", { check: authenticationLabel(metadata.method) }),
     );
+
+    // PetskySign: what the signer typed at the identity check.
+    if (
+      metadata.method === "identity" &&
+      typeof metadata.declaredName === "string" &&
+      typeof metadata.cpf === "string"
+    ) {
+      details.push(
+        tr("declared name: {name}; CPF: {cpf}", {
+          cpf: metadata.cpf,
+          name: metadata.declaredName,
+        }),
+      );
+    }
   }
 
   if (
@@ -1116,7 +1138,7 @@ function describeEventEvidence(event: AuditEventRecord): string[] {
     typeof metadata.method === "string"
   ) {
     details.push(
-      `wrong ${AUTHENTICATION_LABELS[metadata.method] ?? metadata.method}`,
+      tr("wrong {check}", { check: authenticationLabel(metadata.method) }),
     );
   }
 

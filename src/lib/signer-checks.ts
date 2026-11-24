@@ -17,6 +17,9 @@ import { isProduction, resolveAuthSecret } from "./utils/env.ts";
 // - email_code: a one-time code emailed when the signer opens the link.
 //   Proves the person signing controls the mailbox at that moment, not just
 //   that they hold a forwarded link.
+// - identity (PetskySign): the signer types their full name and CPF, which
+//   must match the CPF the business sent (see petsky/cpf.ts). Proves more
+//   than holding a link forwarded in a chat.
 // - account: Part 11 envelopes only. The signer gives the email address and
 //   password of their own account on this install, which was bound to them
 //   when the envelope was sent.
@@ -27,6 +30,7 @@ export const signerCheckMethods = [
   "access_code",
   "account",
   "email_code",
+  "identity",
 ] as const;
 export type SignerCheckMethod = (typeof signerCheckMethods)[number];
 
@@ -45,6 +49,10 @@ export type SignerCheckState = {
   emailCodeExpiresAt: number | null;
   emailCodeHash: string | null;
   emailCodeSentAt: number | null;
+  /** PetskySign: tries left at the identity check are counted here. */
+  identityAttempts: number;
+  /** PetskySign: keyed hash of the CPF the signer must type (petsky/cpf.ts). */
+  identityCpfHash: string | null;
   requireEmailCode: boolean;
 };
 
@@ -63,6 +71,8 @@ export async function getSignerCheckState(
         email_code_expires_at AS "emailCodeExpiresAt",
         email_code_hash AS "emailCodeHash",
         email_code_sent_at AS "emailCodeSentAt",
+        identity_attempts AS "identityAttempts",
+        identity_cpf_hash AS "identityCpfHash",
         require_email_code AS "requireEmailCode"
       FROM signers
       WHERE id = $1
@@ -79,6 +89,8 @@ export async function getSignerCheckState(
       emailCodeExpiresAt: null,
       emailCodeHash: null,
       emailCodeSentAt: null,
+      identityAttempts: 0,
+      identityCpfHash: null,
       requireEmailCode: false,
     }
   );
@@ -86,12 +98,15 @@ export async function getSignerCheckState(
 
 export function requiredSignerChecks(
   state: Pick<SignerCheckState, "accessCodeHash" | "requireEmailCode"> &
-    Partial<Pick<SignerCheckState, "accountUserId">>,
+    Partial<Pick<SignerCheckState, "accountUserId" | "identityCpfHash">>,
 ): SignerCheckMethod[] {
   return [
     ...(state.accessCodeHash ? (["access_code"] as const) : []),
     ...(state.accountUserId ? (["account"] as const) : []),
     ...(state.requireEmailCode ? (["email_code"] as const) : []),
+    // After the emailed code, as at D4Sign: name and CPF just before the
+    // document opens.
+    ...(state.identityCpfHash ? (["identity"] as const) : []),
   ];
 }
 

@@ -115,6 +115,13 @@ import {
   type SignerCheckState,
 } from "./signer-checks.ts";
 import { intlLocale, tr } from "./petsky/locale.ts";
+import {
+  IDENTITY_MAX_ATTEMPTS,
+  cpfMatches,
+  isFullName,
+  maskCpf,
+  normalizeCpf,
+} from "./petsky/cpf.ts";
 
 export type SigningRequestMeta = {
   ipAddress?: string | null;
@@ -1529,6 +1536,8 @@ export async function verifySignerCheck(
   const state = await getSignerCheckState(context.signer.id!, database);
   const now = Math.floor(Date.now() / 1000);
   let passed = false;
+  // PetskySign: what the identity check records when it passes.
+  let identityEvidence: Record<string, unknown> = {};
 
   if (!requiredSignerChecks(state).includes(parsed.method)) {
     throw new SigningMutationError("This check is not needed.", 400);
@@ -1567,6 +1576,86 @@ export async function verifySignerCheck(
       );
 
       throw new SigningMutationError(describeCredentialFailure(result), 400);
+    }
+  } else if (parsed.method === "identity") {
+    // PetskySign: full name and CPF, against the CPF the business sent.
+    const cpf = normalizeCpf(parsed.cpf);
+
+    if (!isFullName(parsed.fullName)) {
+      throw new SigningMutationError(
+        "Type your full name, first and last.",
+        400,
+      );
+    }
+
+    if (!cpf) {
+      throw new SigningMutationError("That CPF is not valid.", 400);
+    }
+
+    // Count the try and read the hash in one statement, as for the emailed
+    // code, so parallel guesses cannot share a try.
+    const attempt = await database.query<{
+      attempts: number;
+      hash: string;
+      hint: string | null;
+    }>(
+      `
+        UPDATE signers
+        SET identity_attempts = identity_attempts + 1
+        WHERE id = $1
+          AND signing_token_hash = $3
+          AND identity_cpf_hash IS NOT NULL
+          AND identity_attempts < $2
+        RETURNING
+          identity_cpf_hash AS hash,
+          identity_cpf_hint AS hint,
+          identity_attempts AS attempts
+      `,
+      [context.signer.id, IDENTITY_MAX_ATTEMPTS, hashOpaqueToken(token)],
+    );
+    const current = attempt.rows[0];
+
+    if (!current) {
+      throw new SigningMutationError(
+        "Too many wrong tries. Ask whoever sent the document to send it again.",
+        429,
+      );
+    }
+
+    passed = cpfMatches(cpf, current.hash);
+
+    if (passed) {
+      identityEvidence = {
+        cpf: current.hint ?? maskCpf(cpf),
+        declaredName: parsed.fullName.trim().replace(/\s+/g, " "),
+      };
+    } else {
+      const left = IDENTITY_MAX_ATTEMPTS - current.attempts;
+
+      await recordAuditEvent(
+        {
+          actorEmail: context.signer.email,
+          actorType: "signer",
+          envelopeId: context.envelope.id,
+          event: "verification_failed",
+          ipAddress: requestMeta.ipAddress ?? null,
+          metadata: { ...signerAuditMetadata(context), method: parsed.method },
+          userAgent: requestMeta.userAgent ?? null,
+        },
+        database,
+      );
+
+      throw new SigningMutationError(
+        left === 1
+          ? tr("That CPF does not match the one the sender has. 1 try is left.")
+          : left > 1
+            ? tr(
+                "That CPF does not match the one the sender has. {count} tries are left.",
+                { count: left },
+              )
+            : "Too many wrong tries. Ask whoever sent the document to send it again.",
+        400,
+      );
     }
   } else if (parsed.method === "access_code") {
     passed = checkAccessCode(parsed.code, state.accessCodeHash!);
@@ -1629,7 +1718,11 @@ export async function verifySignerCheck(
       envelopeId: context.envelope.id,
       event: passed ? "verified" : "verification_failed",
       ipAddress: requestMeta.ipAddress ?? null,
-      metadata: { ...signerAuditMetadata(context), method: parsed.method },
+      metadata: {
+        ...signerAuditMetadata(context),
+        method: parsed.method,
+        ...identityEvidence,
+      },
       userAgent: requestMeta.userAgent ?? null,
     },
     database,

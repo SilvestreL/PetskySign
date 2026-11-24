@@ -34,6 +34,7 @@ import {
   prepareDocumentBranding,
 } from "./document-branding.ts";
 import { displayEmail, placeholderEmailFor } from "./placeholder-email.ts";
+import { hashCpf, maskCpf, normalizeCpf } from "./cpf.ts";
 
 /**
  * The integration API's operations (/api/v1/documents). A "document" here is
@@ -97,6 +98,23 @@ export const createApiDocumentSchema = z
       email: emailSchema.optional(),
       /** "link": nothing is emailed; the link comes back in the response. */
       channel: z.enum(["link", "email"]).default("link"),
+      /**
+       * The signer's CPF. When given, the signer types their full name and
+       * this CPF before the document opens (the "identity" check).
+       */
+      cpf: z
+        .string()
+        .trim()
+        .max(20)
+        .optional()
+        .refine(
+          (value) => value === undefined || normalizeCpf(value) !== null,
+          {
+            message: "That CPF is not valid.",
+          },
+        ),
+      /** Email a one-time code the signer must type before the document opens. */
+      requireEmailCode: z.boolean().optional(),
     }),
     /**
      * Where the signer signs. Coordinates are fractions of the page, from
@@ -122,6 +140,14 @@ export const createApiDocumentSchema = z
     }),
   })
   .superRefine((value, ctx) => {
+    if (value.signer.requireEmailCode && !value.signer.email) {
+      ctx.addIssue({
+        code: "custom",
+        message: "An email address is required to email the signer a code.",
+        path: ["signer", "requireEmailCode"],
+      });
+    }
+
     if (value.signer.channel === "email" && !value.signer.email) {
       ctx.addIssue({
         code: "custom",
@@ -220,13 +246,36 @@ export async function createApiDocument(
     const signers = await replaceDraftEnvelopeSigners(
       userId,
       envelopeId,
-      { signers: [{ email: signerEmail, name: input.signer.name }] },
+      {
+        signers: [
+          {
+            email: signerEmail,
+            name: input.signer.name,
+            ...(input.signer.requireEmailCode
+              ? { requireEmailCode: true }
+              : {}),
+          },
+        ],
+      },
       database,
     );
     const signerId = signers.signers[0]?.id;
 
     if (!signerId) {
       throw new ApiDocumentError("The signer could not be added.", 500);
+    }
+
+    const cpf = input.signer.cpf ? normalizeCpf(input.signer.cpf) : null;
+
+    if (cpf) {
+      await database.query(
+        `
+          UPDATE signers
+          SET identity_cpf_hash = $1, identity_cpf_hint = $2
+          WHERE id = $3 AND envelope_id = $4
+        `,
+        [hashCpf(cpf), maskCpf(cpf), signerId, envelopeId],
+      );
     }
 
     const pageCount = draft.envelope.pageCount;
