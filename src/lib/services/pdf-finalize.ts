@@ -1138,7 +1138,11 @@ function describeEventEvidence(event: AuditEventRecord): string[] {
     typeof metadata.method === "string"
   ) {
     details.push(
-      tr("wrong {check}", { check: authenticationLabel(metadata.method) }),
+      // PetskySign: the identity label says "matching", so a failure needs
+      // its own words.
+      metadata.method === "identity"
+        ? tr("the CPF typed did not match the sender's records")
+        : tr("wrong {check}", { check: authenticationLabel(metadata.method) }),
     );
   }
 
