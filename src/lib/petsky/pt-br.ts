@@ -379,4 +379,6 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "own account, with email address and password to open it":
     "conta própria, com e-mail e senha para abrir",
   "one-time code sent by email": "código de uso único enviado por e-mail",
+  "the CPF typed did not match the sender's records":
+    "o CPF digitado não conferiu com o cadastro de quem enviou",
 };
