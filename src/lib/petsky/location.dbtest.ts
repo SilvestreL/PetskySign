@@ -6,6 +6,8 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 
 import { PDFDocument } from "pdf-lib";
+
+import { createStorageService } from "../services/storage.ts";
 import type pg from "pg";
 
 import { openTestDatabase } from "../db/test-database.ts";
@@ -182,4 +184,20 @@ test("a refused or broken device location never blocks the signature", async () 
     deviceLocationStatus: "nonsense",
   });
   assert.deepEqual(await locationOf(broken.sent.documentId, "signed"), { ip });
+});
+
+test("the signed PDF is one file: the document, then its certificate", async () => {
+  const { sent, token } = await sendDocument();
+
+  await sign(token, { deviceLocationStatus: "denied" });
+
+  const { rows } = await database.query<{ key: string }>(
+    `select signed_pdf_key as key from envelopes where id = $1`,
+    [sent.documentId],
+  );
+  const signed = await createStorageService().getObject(rows[0]!.key);
+  const pdf = await PDFDocument.load(signed.body);
+
+  // One page of contract, then the certificate's page or pages.
+  assert.ok(pdf.getPageCount() >= 2, `pages: ${pdf.getPageCount()}`);
 });

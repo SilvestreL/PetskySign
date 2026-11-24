@@ -737,6 +737,7 @@ function stampSignatureManifestation(
 }
 
 function buildAuditLines(input: {
+  appendedToDocument?: boolean;
   auditEvents: AuditEventRecord[];
   auditFingerprint?: string | null;
   completedAt: number;
@@ -983,6 +984,15 @@ function buildAuditLines(input: {
   if (input.signedPdfSha256) {
     pushParagraph(
       tr("Signed document SHA-256: {hash}", { hash: input.signedPdfSha256 }),
+      input.fonts.regular,
+      smallFontSize,
+      { color: CERT_INK },
+    );
+  } else if (input.appendedToDocument) {
+    pushParagraph(
+      tr(
+        "This certificate is part of the signed file. The code of the whole file is shown when it is checked on the verification page.",
+      ),
       input.fonts.regular,
       smallFontSize,
       { color: CERT_INK },
@@ -1422,6 +1432,7 @@ function getSignerCertificateActionLabel(
 }
 
 function appendAuditTrailPages(input: {
+  appendedToDocument?: boolean;
   auditEvents: AuditEventRecord[];
   auditFingerprint?: string | null;
   completedAt: number;
@@ -1463,6 +1474,7 @@ function appendAuditTrailPages(input: {
   const bottom = margin + footerHeight;
   const buildAt = (scale: number) =>
     buildAuditLines({
+      appendedToDocument: input.appendedToDocument,
       auditEvents: input.auditEvents,
       auditFingerprint: input.auditFingerprint,
       completedAt: input.completedAt,
@@ -1964,6 +1976,11 @@ type CertificateInput = {
   senderName?: string | null;
   /** The finished signed PDF's SHA-256, printed when there is one. */
   signedPdfSha256?: string | null;
+  /**
+   * PetskySign: these pages go inside the signed PDF itself, which cannot
+   * carry its own hash; the certificate says where to check the file.
+   */
+  appendedToDocument?: boolean;
   signers: SignerRecord[];
 };
 
@@ -2048,6 +2065,17 @@ export async function renderEnvelopeCertificatePdf(
     storageService,
   }: SealOption & { storageService?: StorageService } = {},
 ): Promise<Uint8Array> {
+  return seal(
+    await buildEnvelopeCertificateDocument(input, { storageService }),
+    "certificate",
+  );
+}
+
+/** The certificate's pages, not sealed yet. */
+async function buildEnvelopeCertificateDocument(
+  input: CertificateInput,
+  { storageService }: { storageService?: StorageService } = {},
+): Promise<PDFDocument> {
   assertTerminalEnvelope(input.envelope, "Certificates");
 
   const pdfDocument = await PDFDocument.create();
@@ -2129,6 +2157,7 @@ export async function renderEnvelopeCertificatePdf(
     signatures,
     redactForRecipients: input.redactForRecipients,
     signedPdfSha256: input.signedPdfSha256,
+    appendedToDocument: input.appendedToDocument,
     signers: input.signers,
   });
   pdfDocument.setTitle(
@@ -2136,7 +2165,7 @@ export async function renderEnvelopeCertificatePdf(
   );
   pdfDocument.setProducer("Petsky");
 
-  return seal(pdfDocument, "certificate");
+  return pdfDocument;
 }
 
 export class SourceDocumentChangedError extends PdfFinalizeError {
@@ -2156,6 +2185,12 @@ export async function renderFinalizedEnvelopePdf(
     envelope: EnvelopeRecord;
     fields: FieldRecord[];
     includeAuditTrail?: boolean;
+    /**
+     * PetskySign: the certificate to put after the document's pages, so the
+     * signed PDF is one file with its certificate, as D4Sign delivers it.
+     * Its own hash cannot be in it: the separate certificate carries that.
+     */
+    appendedCertificate?: Omit<CertificateInput, "signedPdfSha256">;
     signers: SignerRecord[];
     sourcePdfKey: string;
   },
@@ -2265,6 +2300,25 @@ export async function renderFinalizedEnvelopePdf(
     });
   }
 
+  if (input.appendedCertificate) {
+    const certificate = await buildEnvelopeCertificateDocument(
+      {
+        ...input.appendedCertificate,
+        appendedToDocument: true,
+        signedPdfSha256: null,
+      },
+      { storageService },
+    );
+    const pages = await pdfDocument.copyPages(
+      certificate,
+      certificate.getPageIndices(),
+    );
+
+    for (const page of pages) {
+      pdfDocument.addPage(page);
+    }
+  }
+
   return seal(pdfDocument, "signed-document");
 }
 
@@ -2295,10 +2349,27 @@ export async function finalizeEnvelope(
     envelopeId: input.envelope.id,
     userId: input.envelope.userId,
   };
+  const completedEnvelope = {
+    ...input.envelope,
+    completedAt: generatedAt,
+    status: "completed" as const,
+    updatedAt: generatedAt,
+  };
+  // A document signed with the signers' own certificates stays exactly as
+  // they signed it: adding pages would break those signatures.
   const signedPdfBytes = signedRevision
     ? await finishSignerSignedPdf(signedRevision)
     : await renderFinalizedEnvelopePdf(
         {
+          appendedCertificate: {
+            auditEvents: input.auditEvents,
+            copyRecipients: input.copyRecipients,
+            envelope: completedEnvelope,
+            fields: input.fields,
+            // Everyone who signed gets this file: no one else's address.
+            redactForRecipients: true,
+            signers: input.signers,
+          },
           auditEvents: input.auditEvents,
           completedAt: generatedAt,
           copyRecipients: input.copyRecipients,
@@ -2313,12 +2384,6 @@ export async function finalizeEnvelope(
         },
       );
   const signedPdfSha256 = sha256Hex(signedPdfBytes);
-  const completedEnvelope = {
-    ...input.envelope,
-    completedAt: generatedAt,
-    status: "completed" as const,
-    updatedAt: generatedAt,
-  };
   let signedPdf: StoredSealedPdf | null = null;
   let certificate: StoredSealedPdf | null = null;
   let recipientCertificate: StoredSealedPdf | null = null;

@@ -407,6 +407,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Device location: not allowed by the signer":
     "Localização do aparelho: não autorizada pelo signatário",
   "Device location: unavailable": "Localização do aparelho: indisponível",
+  "This certificate is part of the signed file. The code of the whole file is shown when it is checked on the verification page.":
+    "Este certificado faz parte do arquivo assinado. O código do arquivo inteiro aparece ao conferi-lo na página de verificação.",
   "Approximate location by IP: {place} ({coordinates})":
     "Localização aproximada pelo IP: {place} ({coordinates})",
   "Approximate location by IP: {place}":
