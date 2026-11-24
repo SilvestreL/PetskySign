@@ -25,7 +25,22 @@ const METHOD_COPY: Record<Method, { helper: string; label: string }> = {
     helper: "We email a 6-digit code to the address this document was sent to.",
     label: "Code from your email",
   },
+  // PetskySign: full name and CPF, checked against the CPF the sender has.
+  identity: {
+    helper: "The CPF must be the one the sender has for you.",
+    label: "CPF",
+  },
 };
+
+/** "07822016489" as "078.220.164-89" while it is typed. */
+function formatCpfInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+}
 
 export function SignerVerificationScreen({
   state,
@@ -37,6 +52,7 @@ export function SignerVerificationScreen({
   const method = state.pending[0]!;
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(
     state.emailCodeSentAt && method === "email_code"
@@ -85,7 +101,9 @@ export function SignerVerificationScreen({
         body: JSON.stringify(
           method === "account"
             ? { email, method, password: code }
-            : { code, method },
+            : method === "identity"
+              ? { cpf: code, fullName, method }
+              : { code, method },
         ),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -159,14 +177,38 @@ export function SignerVerificationScreen({
                 value={email}
               />
             ) : null}
+            {method === "identity" ? (
+              <FieldShell
+                autoComplete="name"
+                helper={tr("As it is on your documents.")}
+                label={tr("Full name")}
+                name="signer-full-name"
+                onChange={(event) => setFullName(event.target.value)}
+                readOnly={false}
+                type="text"
+                value={fullName}
+              />
+            ) : null}
             <FieldShell
               autoComplete={
-                method === "account" ? "current-password" : "one-time-code"
+                method === "account"
+                  ? "current-password"
+                  : method === "identity"
+                    ? "off"
+                    : "one-time-code"
               }
               helper={tr(copy.helper)}
               label={tr(copy.label)}
+              inputMode={method === "identity" ? "numeric" : undefined}
               name="signer-code"
-              onChange={(event) => setCode(event.target.value)}
+              onChange={(event) =>
+                setCode(
+                  method === "identity"
+                    ? formatCpfInput(event.target.value)
+                    : event.target.value,
+                )
+              }
+              placeholder={method === "identity" ? "000.000.000-00" : undefined}
               readOnly={false}
               type={method === "account" ? "password" : "text"}
               value={code}
@@ -185,7 +227,8 @@ export function SignerVerificationScreen({
               <ShellButton
                 disabled={
                   code.trim().length === 0 ||
-                  (method === "account" && email.trim().length === 0)
+                  (method === "account" && email.trim().length === 0) ||
+                  (method === "identity" && fullName.trim().length === 0)
                 }
                 loading={isChecking}
                 type="submit"

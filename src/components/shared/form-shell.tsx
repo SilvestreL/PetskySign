@@ -16,6 +16,8 @@ type FieldShellProps = {
   disabled?: boolean;
   error?: string;
   helper?: string;
+  /** The on-screen keyboard to show, such as "numeric" for a CPF. */
+  inputMode?: "numeric" | "text";
   label: string;
   name?: string;
   onChange?: ChangeEventHandler<HTMLInputElement>;
@@ -66,6 +68,7 @@ export function FieldShell({
   error,
   helper,
   ignorePasswordManagers = false,
+  inputMode,
   label,
   maxLength,
   minLength,
@@ -98,6 +101,7 @@ export function FieldShell({
         )}
         disabled={disabled}
         id={inputId}
+        inputMode={inputMode}
         maxLength={maxLength}
         minLength={minLength}
         name={name}

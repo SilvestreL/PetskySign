@@ -148,6 +148,12 @@ export const signerCheckRequestSchema = z.discriminatedUnion("method", [
     method: z.literal("account"),
     password: z.string().min(1).max(128),
   }),
+  // PetskySign: full name and CPF (see petsky/cpf.ts).
+  z.object({
+    cpf: z.string().trim().min(1).max(20),
+    fullName: z.string().trim().min(1).max(200),
+    method: z.literal("identity"),
+  }),
 ]);
 
 export const signerConsentRequestSchema = z.object({
@@ -158,8 +164,8 @@ export type SigningVerificationState = {
   emailCodeSentAt: number | null;
   envelopeTitle: string;
   maskedEmail: string;
-  pending: Array<"access_code" | "account" | "email_code">;
-  required: Array<"access_code" | "account" | "email_code">;
+  pending: Array<"access_code" | "account" | "email_code" | "identity">;
+  required: Array<"access_code" | "account" | "email_code" | "identity">;
   senderName: string;
 };
 export type SigningDeclineResponse = z.infer<
