@@ -35,6 +35,8 @@ import { appLocale, displayTimeZone, tr } from "../petsky/locale.ts";
 import { resolveAppUrl } from "../utils/env.ts";
 import { encode as encodeQr } from "uqr";
 import { isPlaceholderEmail } from "../petsky/placeholder-email.ts";
+import { getDb } from "../db/connection.ts";
+import { getDocumentBranding } from "../petsky/document-branding.ts";
 
 const DEFAULT_AUDIT_PAGE_SIZE = {
   height: 792,
@@ -162,9 +164,28 @@ function redactAuditEventForRecipients(
  * went to while the sender (or the system) did it, so the signer's name must
  * never be put in front of the sender's address (issue #52).
  */
-export function describeAuditActor(event: AuditEventRecord): string {
+export function describeAuditActor(
+  event: AuditEventRecord,
+  // PetskySign: the business that sent the document, shown for the sender's
+  // own events in its certificate instead of the API account's address.
+  options: { senderName?: string | null } = {},
+): string {
   if (event.actorType !== "signer") {
+    if (event.actorType === "sender" && options.senderName) {
+      return options.senderName;
+    }
+
     return event.actorEmail ?? tr(event.actorType);
+  }
+
+  // PetskySign: in the signers' copy addresses are taken out; the name says
+  // who it was without a "<signer>" where the address was.
+  if (
+    !event.actorEmail &&
+    typeof event.metadata?.signerEmail !== "string" &&
+    typeof event.metadata?.signerName === "string"
+  ) {
+    return event.metadata.signerName;
   }
 
   const actor =
@@ -706,14 +727,18 @@ function buildAuditLines(input: {
   };
   maxWidth: number;
   redactForRecipients?: boolean;
+  /** PetskySign: shrinks text and spacing so the certificate fits a page. */
+  scale?: number;
+  senderName?: string | null;
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
 }) {
-  const titleFontSize = 15;
-  const sectionFontSize = 12;
-  const nameFontSize = 10.5;
-  const bodyFontSize = 9;
-  const smallFontSize = 7.75;
+  const scale = input.scale ?? 1;
+  const titleFontSize = 15 * scale;
+  const sectionFontSize = 12 * scale;
+  const nameFontSize = 10.5 * scale;
+  const bodyFontSize = 9 * scale;
+  const smallFontSize = 7.75 * scale;
   const lines: CertificateLine[] = [];
 
   const pushParagraph = (
@@ -735,8 +760,10 @@ function buildAuditLines(input: {
         ...line,
         besideQr: options.besideQr,
         color: options.color,
-        gapAfter: last ? options.gapAfter : undefined,
-        gapBefore: first ? options.gapBefore : undefined,
+        gapAfter:
+          last && options.gapAfter ? options.gapAfter * scale : undefined,
+        gapBefore:
+          first && options.gapBefore ? options.gapBefore * scale : undefined,
         icon: first ? options.icon : undefined,
         indent,
         rule: first ? options.rule : undefined,
@@ -746,8 +773,8 @@ function buildAuditLines(input: {
   const section = (title: string) =>
     pushParagraph(title, input.fonts.bold, sectionFontSize, {
       color: CERT_INK,
-      gapAfter: 8,
-      gapBefore: 16,
+      gapAfter: 6,
+      gapBefore: 12,
       rule: true,
     });
 
@@ -866,7 +893,9 @@ function buildAuditLines(input: {
   section(tr("Audit events"));
 
   for (const event of auditEvents) {
-    const actorLabel = describeAuditActor(event);
+    const actorLabel = describeAuditActor(event, {
+      senderName: input.senderName,
+    });
     const eventLabel =
       event.event === "signer_corrected"
         ? tr("Signer corrected")
@@ -876,7 +905,7 @@ function buildAuditLines(input: {
       formatAuditTimestamp(event.createdAt),
       input.fonts.bold,
       bodyFontSize,
-      { color: CERT_INK, gapBefore: 6 },
+      { color: CERT_INK, gapBefore: 4 },
     );
     pushParagraph(
       appLocale() === "pt-BR"
@@ -936,14 +965,22 @@ function buildAuditLines(input: {
     { color: CERT_MUTED, gapBefore: 4 },
   );
 
-  section(tr("How to check this record"));
+  pushParagraph(
+    tr("How to check this record"),
+    input.fonts.bold,
+    bodyFontSize,
+    {
+      color: CERT_INK,
+      gapBefore: 8,
+    },
+  );
   pushParagraph(
     tr(
       "The signed document and this certificate are each sealed with a digital signature. A PDF reader shows the seal as valid only if the file has not changed since it was sealed. The SHA-256 values above can also be checked on this site's Verify page.",
     ),
     input.fonts.regular,
-    bodyFontSize,
-    { color: CERT_MUTED, gapAfter: 8 },
+    smallFontSize + 0.5,
+    { color: CERT_MUTED, gapAfter: 6 },
   );
   pushParagraph(
     tr(
@@ -1302,6 +1339,7 @@ function appendAuditTrailPages(input: {
   /** PetskySign: the name in each page's header. */
   productName?: string;
   redactForRecipients?: boolean;
+  senderName?: string | null;
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
 }) {
@@ -1319,22 +1357,49 @@ function appendAuditTrailPages(input: {
   const headerHeight = 64;
   const footerHeight = 30;
   const maxWidth = pageSize.width - margin * 2;
-  const lineHeightMultiplier = 1.32;
-  const lines = buildAuditLines({
-    auditEvents: input.auditEvents,
-    auditFingerprint: input.auditFingerprint,
-    completedAt: input.completedAt,
-    copyRecipients: input.copyRecipients,
-    envelope: input.envelope,
-    fonts: input.fonts,
-    maxWidth,
-    redactForRecipients: input.redactForRecipients,
-    signedPdfSha256: input.signedPdfSha256,
-    signers: input.signers,
-  });
-  const pages: PDFPage[] = [];
+  const lineHeightMultiplier = 1.24;
   const top = pageSize.height - margin - headerHeight;
   const bottom = margin + footerHeight;
+  const buildAt = (scale: number) =>
+    buildAuditLines({
+      auditEvents: input.auditEvents,
+      auditFingerprint: input.auditFingerprint,
+      completedAt: input.completedAt,
+      copyRecipients: input.copyRecipients,
+      envelope: input.envelope,
+      fonts: input.fonts,
+      maxWidth,
+      redactForRecipients: input.redactForRecipients,
+      scale,
+      senderName: input.senderName,
+      signedPdfSha256: input.signedPdfSha256,
+      signers: input.signers,
+    });
+  const heightOf = (candidate: CertificateLine[]) =>
+    candidate.reduce(
+      (total, line) =>
+        total +
+        (line.gapBefore ?? 0) +
+        (line.rule ? 6 : 0) +
+        line.size * lineHeightMultiplier +
+        (line.gapAfter ?? 0),
+      0,
+    );
+  // PetskySign: one page, as D4Sign's. The text shrinks in steps until it
+  // fits; only a document with many signers and events goes on to a second
+  // page, at the smallest step.
+  const scales = [1, 0.94, 0.88, 0.82, 0.76, 0.7];
+  let lines = buildAt(scales[0]!);
+
+  for (const scale of scales.slice(1)) {
+    if (heightOf(lines) <= top - bottom) {
+      break;
+    }
+
+    lines = buildAt(scale);
+  }
+
+  const pages: PDFPage[] = [];
   const newPage = () => {
     const created = input.pdfDocument.addPage([
       pageSize.width,
@@ -1600,6 +1665,11 @@ type CertificateInput = {
   copyRecipients?: readonly CertificateCopyRecipient[];
   envelope: EnvelopeRecord;
   redactForRecipients?: boolean;
+  /**
+   * PetskySign: the business that sent the document, for the sender's
+   * events. Read from the document's branding when left out.
+   */
+  senderName?: string | null;
   /** The finished signed PDF's SHA-256, printed when there is one. */
   signedPdfSha256?: string | null;
   signers: SignerRecord[];
@@ -1667,6 +1737,15 @@ export async function storeRecipientEnvelopeCertificatePdf(
   );
 }
 
+/** PetskySign: the business on the document's branding, if it has one. */
+async function readSenderName(envelopeId: string): Promise<string | null> {
+  try {
+    return (await getDocumentBranding(envelopeId, getDb()))?.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function renderEnvelopeCertificatePdf(
   input: CertificateInput,
   { seal = defaultSealer }: SealOption = {},
@@ -1704,6 +1783,7 @@ export async function renderEnvelopeCertificatePdf(
     productName: await getBranding()
       .then((branding) => branding.productName)
       .catch(() => "Petsky"),
+    senderName: input.senderName ?? (await readSenderName(input.envelope.id)),
     redactForRecipients: input.redactForRecipients,
     signedPdfSha256: input.signedPdfSha256,
     signers: input.signers,
