@@ -624,13 +624,128 @@ test("a sent row names the sender, not the first signer (issue #52)", async () =
     assert.ok(!text.includes(`${SIGNER_NAME} <sam@sender.example>`), text);
     assert.match(text, /sent \| sam@sender\.example/);
     assert.match(text, /reminded_auto \| system/);
+    // PetskySign: in the signers' copy, just the name, without "<signer>"
+    // where the address was taken out.
     assert.ok(
       text.includes(
-        `viewed | ${SIGNER_NAME} <${redacted ? "signer" : "lukasz@example.com"}>`,
+        redacted
+          ? `viewed | ${SIGNER_NAME} 2027`
+          : `viewed | ${SIGNER_NAME} <lukasz@example.com>`,
       ),
       text,
     );
+    assert.ok(!text.includes(`${SIGNER_NAME} <signer>`), text);
   }
+});
+
+test("a typical certificate fits on one page, as D4Sign's (PetskySign)", async () => {
+  const fixture = await makeFixture();
+  const signer = fixture.signers[0]!;
+  const at = (offset: number) => 1_799_999_000 + offset;
+  const base = { envelopeId: fixture.envelope.id };
+  const asSigner = {
+    actorEmail: signer.email,
+    actorType: "signer" as const,
+    ipAddress: "45.7.178.55",
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
+  };
+  const meta = { signerId: signer.id, signerName: signer.name };
+  const auditEvents: AuditEventRecord[] = [
+    {
+      ...base,
+      actorEmail: "api@petsky.example",
+      actorType: "sender",
+      createdAt: at(0),
+      event: "created",
+      id: "e1",
+      metadata: null,
+    },
+    {
+      ...base,
+      actorEmail: "api@petsky.example",
+      actorType: "sender",
+      createdAt: at(1),
+      event: "sent",
+      id: "e2",
+      metadata: { ...meta, signerEmail: signer.email },
+    },
+    {
+      ...base,
+      ...asSigner,
+      createdAt: at(20),
+      event: "verified",
+      id: "e3",
+      metadata: {
+        ...meta,
+        cpf: "529.***.***-25",
+        declaredName: signer.name,
+        method: "identity",
+      },
+    },
+    {
+      ...base,
+      ...asSigner,
+      createdAt: at(21),
+      event: "viewed",
+      id: "e4",
+      metadata: meta,
+    },
+    {
+      ...base,
+      ...asSigner,
+      createdAt: at(40),
+      event: "consented",
+      id: "e5",
+      metadata: { ...meta, disclosureVersion: "2026-11-19-pt-BR" },
+    },
+    {
+      ...base,
+      ...asSigner,
+      createdAt: at(70),
+      event: "signed",
+      id: "e6",
+      metadata: {
+        ...meta,
+        authMethods: ["identity"],
+        clientTimezoneOffsetMinutes: 180,
+      },
+    },
+  ];
+
+  for (const redactForRecipients of [false, true]) {
+    const bytes = await renderEnvelopeCertificatePdf(
+      {
+        auditEvents,
+        envelope: fixture.envelope,
+        redactForRecipients,
+        senderName: "Creche Patinhas",
+        signedPdfSha256: "c".repeat(64),
+        signers: [signer],
+      },
+      { seal: saveUnsealed },
+    );
+
+    assert.equal((await PDFDocument.load(bytes)).getPageCount(), 1);
+  }
+});
+
+test("describeAuditActor names the business for the sender's rows (PetskySign)", () => {
+  const event = {
+    actorEmail: "api@petsky.example",
+    actorType: "sender",
+    createdAt: 1,
+    envelopeId: "envelope-1",
+    event: "sent",
+    id: "event-1",
+    metadata: { signerName: "Isabela Moreira" },
+  } as const;
+
+  assert.equal(
+    describeAuditActor(event, { senderName: "Creche Patinhas" }),
+    "Creche Patinhas",
+  );
+  assert.equal(describeAuditActor(event), "api@petsky.example");
 });
 
 test("describeAuditActor keeps the signer's name on the signer's own rows", () => {
