@@ -1036,7 +1036,7 @@ function buildAuditLines(input: {
   );
   pushParagraph(
     tr(
-      "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001, when the parties accept the means used, as the signer did here.",
+      "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001.",
     ),
     input.fonts.bold,
     bodyFontSize,

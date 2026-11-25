@@ -400,8 +400,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "Document hashes": "Hash do documento",
   "This record belongs only to the documents with the hashes above.":
     "Este registro pertence única e exclusivamente aos documentos com os hashes acima.",
-  "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001, when the parties accept the means used, as the signer did here.":
-    "A assinatura eletrônica tem validade legal no Brasil pelo art. 10, § 2º, da MP 2.200-2/2001, quando as partes aceitam o meio usado, como o signatário aceitou aqui.",
+  "Electronic signatures have legal validity in Brazil under art. 10, § 2, of MP 2.200-2/2001.":
+    "A assinatura eletrônica tem validade legal no Brasil pelo art. 10, § 2º, da MP 2.200-2/2001.",
   "Location shared by the device: {coordinates} (accuracy {meters} m)":
     "Localização informada pelo aparelho: {coordinates} (precisão de {meters} m)",
   "Device location: not allowed by the signer":
