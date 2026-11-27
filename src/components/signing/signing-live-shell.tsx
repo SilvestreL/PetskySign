@@ -1059,7 +1059,7 @@ export function SigningLiveShell({
             <li>
               {record.pageCount > 1
                 ? tr(
-                    "1. Read the document. It has {count} pages: use the arrows to turn them.",
+                    "1. Read the document. It has {count} pages: scroll down to see them all.",
                     { count: record.pageCount },
                   )
                 : tr("1. Read the document.")}
@@ -1158,7 +1158,7 @@ export function SigningLiveShell({
                   }`}
                 >
                   {isPhone ? (
-                    <div className="flex flex-col gap-4">
+                    <div className="flex w-full flex-col gap-4">
                       {record.pages.map((page, index) => (
                         <div
                           id={`signing-page-${page.pageNumber}`}
