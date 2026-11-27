@@ -15,8 +15,8 @@ import { getBranding } from "@/lib/settings";
 
 export const metadata: Metadata = {
   description:
-    "Which documents can be signed here, and what kind of electronic signature this is.",
-  title: "Electronic signatures: what this is for",
+    "Quais documentos podem ser assinados aqui e que tipo de assinatura eletrônica é esta.",
+  title: "Assinatura eletrônica: para que serve",
 };
 
 function List({ items }: { items: string[] }) {

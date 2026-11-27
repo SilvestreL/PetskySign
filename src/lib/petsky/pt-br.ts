@@ -105,6 +105,10 @@ export const PT_BR: Readonly<Record<string, string>> = {
   Signature: "Assinatura",
   "Signature preview": "Prévia da assinatura",
   "Tap to sign": "Toque para assinar",
+  "A number field marked in red does not hold a number.":
+    "Um campo de número marcado em vermelho não tem um número.",
+  "Enter a number, such as 1250 or 12.5.":
+    "Digite um número, como 1250 ou 12,5.",
   "Drawn signature": "Assinatura desenhada",
   "Drawn initials": "Rubrica desenhada",
   "Sent by {sender}": "Enviado por {sender}",

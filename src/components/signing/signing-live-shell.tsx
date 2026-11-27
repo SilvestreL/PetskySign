@@ -1031,7 +1031,7 @@ export function SigningLiveShell({
                 {record.envelopeTitle}
               </p>
               <p className="mt-0.5 truncate text-[0.8125rem] text-(--tertiary)">
-                From {record.senderName}
+                {tr("Sent by {sender}", { sender: record.senderName })}
               </p>
             </div>
           </div>
@@ -1238,8 +1238,8 @@ export function SigningLiveShell({
                     className="mt-1.5 text-[0.8125rem] font-semibold leading-5 text-(--danger)"
                     role="alert"
                   >
-                    A number field marked in red does not hold a number.{" "}
-                    {NUMBER_ENTRY_MESSAGE}
+                    {tr("A number field marked in red does not hold a number.")}{" "}
+                    {tr(NUMBER_ENTRY_MESSAGE)}
                   </p>
                 ) : null}
                 <div
