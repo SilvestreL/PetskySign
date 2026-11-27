@@ -294,7 +294,16 @@ function getCompletionValue(
   }: EnteredValues & { localDateLabel: string; signerName: string },
 ) {
   if (field.type === "signature" || field.type === "initials") {
-    return signatureValues[field.id]?.value ?? tr("Tap to sign");
+    const entry = signatureValues[field.id];
+
+    // A drawn mark is stored as "Drawn signature"; show it in the reader's language.
+    if (entry?.inputMethod === "drawn") {
+      return field.type === "initials"
+        ? tr("Drawn initials")
+        : tr("Drawn signature");
+    }
+
+    return entry?.value ?? tr("Tap to sign");
   }
 
   if (field.type === "name") {
@@ -2432,7 +2441,7 @@ function DialogFrame({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-h-[calc(100dvh-2rem)] max-w-[600px] overflow-y-auto p-0"
+        className="max-h-[calc(100dvh-2rem)] max-w-[min(600px,calc(100%-2rem))] overflow-y-auto p-0"
         showCloseButton={false}
       >
         <div>

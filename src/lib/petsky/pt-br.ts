@@ -105,6 +105,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   Signature: "Assinatura",
   "Signature preview": "Prévia da assinatura",
   "Tap to sign": "Toque para assinar",
+  "Drawn signature": "Assinatura desenhada",
+  "Drawn initials": "Rubrica desenhada",
   "Sent by {sender}": "Enviado por {sender}",
   "1. Read the document. It has {count} pages: scroll down to see them all.":
     "1. Leia o documento. Ele tem {count} páginas: role a tela para ver todas.",
