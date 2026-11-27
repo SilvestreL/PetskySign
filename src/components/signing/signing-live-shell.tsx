@@ -662,10 +662,23 @@ export function SigningLiveShell({
     }
 
     setActivePage(nextRequiredField.page);
-    paperGridRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+
+    if (!isPhone) {
+      paperGridRef.current?.scrollIntoView({ block: "start" });
+      return;
+    }
+
+    // Phones: a jump to that page, not a smooth scroll; the pages above are
+    // still drawing and a smooth scroll stops partway when they change size.
+    const target = document.getElementById(
+      `signing-page-${nextRequiredField.page}`,
+    );
+
+    if (target) {
+      window.scrollTo({
+        top: target.getBoundingClientRect().top + window.scrollY - 80,
+      });
+    }
   };
   const requiredFieldCount = countAnswerableFields(
     record.currentSignerFields,
@@ -1317,7 +1330,8 @@ export function SigningLiveShell({
           </ShellButton>
         ) : (
           <ShellButton className="w-full" onClick={goToNextField}>
-            {nextRequiredField && nextRequiredField.page !== activePage
+            {nextRequiredField &&
+            (isPhone || nextRequiredField.page !== activePage)
               ? tr("Go to the signature (page {page})", {
                   page: nextRequiredField.page,
                 })
