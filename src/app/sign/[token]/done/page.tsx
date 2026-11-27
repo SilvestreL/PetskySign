@@ -9,7 +9,13 @@ import {
   formatCompletionDate,
   getSignerCompletionForToken,
 } from "@/lib/petsky/signer-completion";
+import { hashOpaqueToken } from "@/lib/services/opaque-tokens";
 import { getBranding } from "@/lib/settings";
+import {
+  readVerifiedMethods,
+  verificationCookieName,
+} from "@/lib/signer-checks";
+import { cookies } from "next/headers";
 
 type SignDonePageProps = {
   params: Promise<{ token: string }>;
@@ -41,6 +47,14 @@ export default async function SignDonePage({
     ? await getDocumentBranding(envelopeId, database).catch(() => null)
     : null;
   const downloadBase = `/api/signing/${encodeURIComponent(token)}/download`;
+  // The sender asked for the CPF: the copy needs it again in this browser.
+  const tokenHash = hashOpaqueToken(token);
+  const copyLocked =
+    completion?.identityRequired === true &&
+    !readVerifiedMethods(
+      tokenHash,
+      (await cookies()).get(verificationCookieName(tokenHash))?.value,
+    ).includes("identity");
 
   return (
     <BrandingProvider
@@ -53,6 +67,9 @@ export default async function SignDonePage({
                 awaitingCount: completion.awaitingCount,
                 certificateUrl: completion.downloadAvailable
                   ? `${downloadBase}/certificate`
+                  : null,
+                copyUnlockUrl: copyLocked
+                  ? `/api/signing/${encodeURIComponent(token)}/copy`
                   : null,
                 completedAtLabel: completion.completedAt
                   ? formatCompletionDate(completion.completedAt)

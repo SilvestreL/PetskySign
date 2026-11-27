@@ -357,6 +357,15 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "These downloads stay available on this link until {date}. Save your copy.":
     "Os downloads ficam disponíveis neste link até {date}. Guarde sua cópia.",
   "{signers} · {fields}": "{signers} · {fields}",
+  "Something went wrong. Try again.": "Algo deu errado. Tente de novo.",
+  "To download your copy, type your CPF":
+    "Para baixar sua cópia, digite seu CPF",
+  "Confirm your CPF on the signing page to download your copy.":
+    "Confirme seu CPF na página do documento para baixar sua cópia.",
+  "Too many wrong tries. Ask the business that sent the document for a copy.":
+    "Muitas tentativas erradas. Peça a cópia a quem enviou o documento.",
+  "Confirm your name and CPF before asking for the code.":
+    "Confirme seu nome e CPF antes de pedir o código.",
   "Type your full name, first and last.":
     "Digite seu nome completo, com nome e sobrenome.",
   "That CPF is not valid.": "Esse CPF não é válido.",

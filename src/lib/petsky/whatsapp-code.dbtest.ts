@@ -234,7 +234,7 @@ test("a send that fails can be tried again at once", async () => {
   assert.equal(sent.length, before + 1);
 });
 
-test("with a CPF too, the WhatsApp code comes first, then name and CPF", async () => {
+test("with a CPF too, name and CPF come first, then the WhatsApp code", async () => {
   configureEvolution(true);
   const token = await send({
     cpf: "529.982.247-25",
@@ -244,7 +244,7 @@ test("with a CPF too, the WhatsApp code comes first, then name and CPF", async (
   const details = await pending(token);
 
   assert.ok(!Array.isArray(details));
-  assert.deepEqual(details.pending, ["whatsapp_code", "identity"]);
+  assert.deepEqual(details.pending, ["identity", "whatsapp_code"]);
 });
 
 test("a phone without requireWhatsappCode asks for nothing", async () => {

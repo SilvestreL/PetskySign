@@ -21,9 +21,12 @@ import {
 } from "../signing.ts";
 import { createApiDocument, createApiDocumentSchema } from "./api-documents.ts";
 import { authenticateApiKey, createApiKey } from "./api-keys.ts";
+import { hashCpf, IDENTITY_MAX_ATTEMPTS } from "./cpf.ts";
 import {
+  CopyUnlockError,
   DOWNLOAD_WINDOW_SECONDS,
   getSignerCompletionForToken,
+  unlockSignerCopy,
 } from "./signer-completion.ts";
 
 // The page a signer lands on after signing, against a real Postgres.
@@ -215,5 +218,43 @@ test("the downloads stop after the window, and are refused for another envelope"
       database,
     }),
     DownloadAccessError,
+  );
+});
+
+test("with a CPF on file, the copy asks for it again, with its own tries", async () => {
+  const token = await sendDocument();
+
+  await sign(token);
+  // As if the sender had sent the CPF: the copy now needs it.
+  const signer = await getSignerCompletionForToken(token, { database });
+
+  assert.ok(signer);
+  assert.equal(signer.identityRequired, false);
+  await database.query(
+    `update signers set identity_cpf_hash = $1 where id = $2`,
+    [hashCpf("52998224725"), signer.signerId],
+  );
+  assert.equal(
+    (await getSignerCompletionForToken(token, { database }))?.identityRequired,
+    true,
+  );
+
+  await assert.rejects(
+    unlockSignerCopy(token, { cpf: "111.444.777-35" }, { database }),
+    (error) => error instanceof CopyUnlockError && error.statusCode === 400,
+  );
+  // The right CPF clears the count; wrong ones then lock the copy.
+  await unlockSignerCopy(token, { cpf: "529.982.247-25" }, { database });
+
+  for (let index = 0; index < IDENTITY_MAX_ATTEMPTS; index += 1) {
+    await assert.rejects(
+      unlockSignerCopy(token, { cpf: "111.444.777-35" }, { database }),
+      CopyUnlockError,
+    );
+  }
+
+  await assert.rejects(
+    unlockSignerCopy(token, { cpf: "529.982.247-25" }, { database }),
+    (error) => error instanceof CopyUnlockError && error.statusCode === 429,
   );
 });

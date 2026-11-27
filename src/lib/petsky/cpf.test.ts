@@ -36,3 +36,19 @@ test("a full name has a first and a last name", () => {
   assert.equal(isFullName("Isabela"), false);
   assert.equal(isFullName("A B"), false);
 });
+
+test("with CPF_HASH_PEPPER, new hashes use it and old ones still match", () => {
+  const legacy = hashCpf(CPF);
+
+  process.env.CPF_HASH_PEPPER = "pepper-for-tests";
+  try {
+    const peppered = hashCpf(CPF);
+
+    assert.notEqual(peppered, legacy);
+    assert.equal(cpfMatches(CPF, peppered), true);
+    assert.equal(cpfMatches(CPF, legacy), true);
+    assert.equal(cpfMatches("11144477735", legacy), false);
+  } finally {
+    delete process.env.CPF_HASH_PEPPER;
+  }
+});

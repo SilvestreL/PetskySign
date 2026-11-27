@@ -1535,7 +1535,13 @@ export async function sendSignerWhatsappCode(
   {
     database = getDb(),
     sendWhatsapp = createWhatsappSender(),
-  }: { database?: DbPool; sendWhatsapp?: WhatsappSender | null } = {},
+    verifiedMethods = [],
+  }: {
+    database?: DbPool;
+    sendWhatsapp?: WhatsappSender | null;
+    /** Checks this browser already passed (the verification cookie). */
+    verifiedMethods?: readonly SignerCheckMethod[];
+  } = {},
 ): Promise<{ maskedPhone: string; whatsappCodeSentAt: number }> {
   const context = await resolveSigningContext(token, { database });
   const state = await getSignerCheckState(context.signer.id!, database);
@@ -1543,6 +1549,15 @@ export async function sendSignerWhatsappCode(
 
   if (!state.requireWhatsappCode || !state.whatsappPhone) {
     throw new SigningMutationError("No code is needed for this link.", 400);
+  }
+
+  // Name and CPF first: someone with only a forwarded link cannot make us
+  // message the tutor.
+  if (state.identityCpfHash && !verifiedMethods.includes("identity")) {
+    throw new SigningMutationError(
+      "Confirm your name and CPF before asking for the code.",
+      403,
+    );
   }
 
   const maskedPhone = maskPhone(state.whatsappPhone);

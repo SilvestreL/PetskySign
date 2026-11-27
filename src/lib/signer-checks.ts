@@ -132,10 +132,10 @@ export function requiredSignerChecks(
     ...(state.accessCodeHash ? (["access_code"] as const) : []),
     ...(state.accountUserId ? (["account"] as const) : []),
     ...(state.requireEmailCode ? (["email_code"] as const) : []),
-    ...(state.requireWhatsappCode ? (["whatsapp_code"] as const) : []),
-    // After the emailed code, as at D4Sign: name and CPF just before the
-    // document opens.
+    // After the emailed code, as at D4Sign: name and CPF. Before the WhatsApp
+    // code, so a forwarded link cannot make us message the tutor.
     ...(state.identityCpfHash ? (["identity"] as const) : []),
+    ...(state.requireWhatsappCode ? (["whatsapp_code"] as const) : []),
   ];
 }
 
