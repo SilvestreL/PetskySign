@@ -15,6 +15,7 @@ import {
   sendSignerWhatsappCode,
 } from "@/lib/signing";
 import { tr } from "@/lib/petsky/locale";
+import { verifiedMethodsForRequest } from "@/lib/signing-route";
 
 type WhatsappCodeRouteContext = {
   params: Promise<{
@@ -44,7 +45,10 @@ export async function POST(
 
   try {
     return NextResponse.json(
-      await sendSignerWhatsappCode(token, { database: getDb() }),
+      await sendSignerWhatsappCode(token, {
+        database: getDb(),
+        verifiedMethods: verifiedMethodsForRequest(token, request),
+      }),
       { headers: NO_STORE },
     );
   } catch (error) {

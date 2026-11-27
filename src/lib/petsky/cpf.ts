@@ -43,10 +43,13 @@ export function normalizeCpf(input: unknown): string | null {
 }
 
 /**
- * Keyed with the auth secret. Changing BETTER_AUTH_SECRET leaves the CPFs of
- * documents still waiting for a signature unmatchable: send them again.
+ * Keyed with CPF_HASH_PEPPER, a key used for nothing else: a leaked auth
+ * secret (which signs sessions and the verification cookie) does not also let
+ * anyone try every CPF against a leaked database. Without it, the auth secret,
+ * as before. CPFs hashed with the auth secret still match after the pepper is
+ * set (`legacyHashKey`), so documents already sent keep working.
  */
-function hashKey(): string {
+function authSecretKey(): string {
   const secret = resolveAuthSecret();
 
   if (secret) {
@@ -62,17 +65,36 @@ function hashKey(): string {
   return "petskysign-development-only";
 }
 
-export function hashCpf(cpf: string): string {
-  return createHmac("sha256", hashKey())
+function pepper(): string | null {
+  return process.env.CPF_HASH_PEPPER?.trim() || null;
+}
+
+function hmacCpf(key: string, cpf: string): string {
+  return createHmac("sha256", key)
     .update(`${HASH_CONTEXT}:${cpf}`)
     .digest("hex");
 }
 
-export function cpfMatches(cpf: string, storedHash: string): boolean {
-  const given = Buffer.from(hashCpf(cpf), "hex");
-  const stored = Buffer.from(storedHash, "hex");
+export function hashCpf(cpf: string): string {
+  return hmacCpf(pepper() ?? authSecretKey(), cpf);
+}
+
+function sameHex(a: string, b: string): boolean {
+  const given = Buffer.from(a, "hex");
+  const stored = Buffer.from(b, "hex");
 
   return given.length === stored.length && timingSafeEqual(given, stored);
+}
+
+export function cpfMatches(cpf: string, storedHash: string): boolean {
+  if (sameHex(hashCpf(cpf), storedHash)) {
+    return true;
+  }
+
+  // Sent before CPF_HASH_PEPPER was set: hashed with the auth secret.
+  return (
+    pepper() !== null && sameHex(hmacCpf(authSecretKey(), cpf), storedHash)
+  );
 }
 
 /** "078.***.***-89": enough to tell CPFs apart in the audit trail. */

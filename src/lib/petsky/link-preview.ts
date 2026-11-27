@@ -39,6 +39,8 @@ export async function getLinkPreviewForToken(
 const LINK_PREVIEW_BOTS =
   /facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|slackbot|slack-imgproxy|linkedinbot|discordbot|skypeuripreview|applebot|googlebot|bingbot|google-pagerenderer|embedly|pinterest|redditbot|vkshare|iframely|outlook|microsoftpreview|bitlybot/i;
 
-export function isLinkPreviewBot(userAgent: string | null | undefined): boolean {
+export function isLinkPreviewBot(
+  userAgent: string | null | undefined,
+): boolean {
   return Boolean(userAgent && LINK_PREVIEW_BOTS.test(userAgent));
 }

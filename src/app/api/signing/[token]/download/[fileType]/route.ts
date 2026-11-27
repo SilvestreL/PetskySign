@@ -14,6 +14,7 @@ import {
   buildRateLimitKey,
 } from "@/lib/security/route-controls";
 import { getClientIpAddress } from "@/lib/security/request";
+import { verifiedMethodsForRequest } from "@/lib/signing-route";
 
 // PetskySign: the signed PDF ("signed") or certificate ("certificate") for
 // the signer whose signing link this is, offered on the page they land on
@@ -80,6 +81,17 @@ export async function GET(
 
     if (!completion?.downloadAvailable) {
       return textResponse(unavailable, 410);
+    }
+
+    // The sender asked for the CPF: a forwarded link alone gets no file.
+    if (
+      completion.identityRequired &&
+      !verifiedMethodsForRequest(token, request).includes("identity")
+    ) {
+      return textResponse(
+        tr("Confirm your CPF on the signing page to download your copy."),
+        403,
+      );
     }
 
     const download = await getSignerEnvelopeDownload(

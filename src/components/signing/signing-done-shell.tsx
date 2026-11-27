@@ -4,6 +4,8 @@ import { Brand } from "@/components/layout/brand";
 import { PublicLegalFooter } from "@/components/layout/public-legal-links";
 import { useBranding } from "@/components/layout/branding-provider";
 import { tr } from "@/lib/petsky/locale";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type SigningDoneShellProps = {
   /**
@@ -20,6 +22,8 @@ type SigningDoneShellProps = {
   completion?: {
     awaitingCount: number;
     certificateUrl: string | null;
+    /** Set when the copy needs the CPF again first (POST it here). */
+    copyUnlockUrl?: string | null;
     completedAtLabel: string | null;
     downloadUntilLabel: string | null;
     signedAtLabel: string | null;
@@ -168,24 +172,28 @@ function CompletedDetails({
         ) : null}
       </dl>
 
-      <div className="mx-auto mt-6 flex max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
-        <a
-          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-(--accent) px-5 text-[0.9375rem] font-semibold text-white transition hover:bg-(--accent-hover)"
-          download
-          href={completion.signedPdfUrl ?? undefined}
-        >
-          {tr("Download signed document")}
-        </a>
-        {completion.certificateUrl ? (
+      {completion.copyUnlockUrl ? (
+        <CopyUnlockForm url={completion.copyUnlockUrl} />
+      ) : (
+        <div className="mx-auto mt-6 flex max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
           <a
-            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-(--border-strong) bg-(--paper) px-5 text-[0.9375rem] font-semibold text-(--fg) transition hover:border-(--border-hover)"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-(--accent) px-5 text-[0.9375rem] font-semibold text-white transition hover:bg-(--accent-hover)"
             download
-            href={completion.certificateUrl}
+            href={completion.signedPdfUrl ?? undefined}
           >
-            {tr("Download certificate")}
+            {tr("Download signed document")}
           </a>
-        ) : null}
-      </div>
+          {completion.certificateUrl ? (
+            <a
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-(--border-strong) bg-(--paper) px-5 text-[0.9375rem] font-semibold text-(--fg) transition hover:border-(--border-hover)"
+              download
+              href={completion.certificateUrl}
+            >
+              {tr("Download certificate")}
+            </a>
+          ) : null}
+        </div>
+      )}
 
       {completion.signedPdfSha256 ? (
         <div className="mx-auto mt-8 max-w-[480px] rounded-2xl border border-(--border) px-5 py-4 text-left">
@@ -219,5 +227,67 @@ function CompletedDetails({
         </p>
       ) : null}
     </>
+  );
+}
+
+/** The CPF again before the copy downloads: a forwarded link alone gets no file. */
+function CopyUnlockForm({ url }: { url: string }) {
+  const router = useRouter();
+  const [cpf, setCpf] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    const response = await fetch(url, {
+      body: JSON.stringify({ cpf }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    setBusy(false);
+
+    if (response?.ok) {
+      router.refresh();
+      return;
+    }
+
+    const body = (await response?.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    setError(body?.error ?? tr("Something went wrong. Try again."));
+  }
+
+  return (
+    <form
+      className="mx-auto mt-6 flex max-w-[480px] flex-col gap-3 text-left"
+      onSubmit={submit}
+    >
+      <label className="text-sm font-semibold text-(--fg)" htmlFor="copy-cpf">
+        {tr("To download your copy, type your CPF")}
+      </label>
+      <input
+        autoComplete="off"
+        className="min-h-12 rounded-xl border border-(--border-strong) bg-(--paper) px-4 text-base text-(--fg)"
+        id="copy-cpf"
+        inputMode="numeric"
+        onChange={(event) => setCpf(event.target.value)}
+        placeholder="000.000.000-00"
+        value={cpf}
+      />
+      {error ? (
+        <p className="rounded-xl bg-(--danger-soft,#fdecec) px-4 py-3 text-sm font-semibold text-(--danger,#b42318)">
+          {error}
+        </p>
+      ) : null}
+      <button
+        className="inline-flex min-h-12 items-center justify-center rounded-xl bg-(--accent) px-5 text-[0.9375rem] font-semibold text-white transition hover:bg-(--accent-hover) disabled:opacity-60"
+        disabled={busy || cpf.replace(/\D/g, "").length !== 11}
+        type="submit"
+      >
+        {tr("Continue")}
+      </button>
+    </form>
   );
 }
