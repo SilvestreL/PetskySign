@@ -144,12 +144,17 @@ export function formatCompletionDate(unixSeconds: number): string {
 }
 
 export class CopyUnlockError extends Error {
+  readonly statusCode: number;
+  readonly params: Record<string, number>;
+
   constructor(
     message: string,
-    readonly statusCode: number,
-    readonly params: Record<string, number> = {},
+    statusCode: number,
+    params: Record<string, number> = {},
   ) {
     super(message);
+    this.statusCode = statusCode;
+    this.params = params;
   }
 }
 
