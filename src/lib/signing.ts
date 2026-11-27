@@ -1620,18 +1620,16 @@ export async function sendSignerWhatsappCode(
   const sender = signerFacingSenderName(context.sender);
 
   try {
+    // PetskySign: the explanation first, then the code alone in its own
+    // message, so holding it and tapping Copy takes exactly the code.
     await sendWhatsapp(
       state.whatsappPhone,
       tr(
-        '{code} is your code to open "{title}", sent by {sender}. It works for {minutes} minutes. Do not share it.',
-        {
-          code: issued.code,
-          minutes,
-          sender,
-          title: context.envelope.title,
-        },
+        'Your code to open "{title}", sent by {sender}, is in the next message. It works for {minutes} minutes. Do not share it with anyone.',
+        { minutes, sender, title: context.envelope.title },
       ),
     );
+    await sendWhatsapp(state.whatsappPhone, issued.code);
   } catch {
     // Not sent, so the signer may ask again at once.
     await database.query(

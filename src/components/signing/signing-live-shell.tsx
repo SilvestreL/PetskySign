@@ -552,11 +552,10 @@ export function SigningLiveShell({
   signatureProblem?: ProviderSignatureProblem | null;
 }) {
   const [hasDeclined, setHasDeclined] = useState(false);
+  // PetskySign: from the first page, so the tutor reads the contract before
+  // reaching the signature; "Go to signature" jumps to it.
   const [activePage, setActivePage] = useState(
-    record.currentSignerFields[0]?.page ??
-      record.visibleFields[0]?.page ??
-      record.pages[0]?.pageNumber ??
-      1,
+    record.pages[0]?.pageNumber ?? 1,
   );
   const [checkboxValues, setCheckboxValues] = useState<Record<string, boolean>>(
     {},
@@ -610,14 +609,9 @@ export function SigningLiveShell({
     }).format(new Date()),
   );
   const paperGridRef = useRef<HTMLDivElement | null>(null);
+  const isPhone = useIsPhone();
   const documentPanGestureRef = useRef<DocumentPanGesture | null>(null);
 
-  const activePageRecord =
-    record.pages.find((page) => page.pageNumber === activePage) ??
-    record.pages[0];
-  const pageCurrentFields = record.currentSignerFields.filter(
-    (field) => field.page === activePage,
-  );
   const pageVisibleFields = record.visibleFields.filter(
     (field) => field.page === activePage,
   );
@@ -657,6 +651,22 @@ export function SigningLiveShell({
     hasInvalidNumber(field, textValues),
   ).length;
   const canFinish = remainingFields === 0 && invalidNumberCount === 0;
+  const nextRequiredField = record.currentSignerFields.find(
+    (field) =>
+      field.required &&
+      !isFieldComplete(field, record.currentSignerFields, enteredValues),
+  );
+  const goToNextField = () => {
+    if (!nextRequiredField) {
+      return;
+    }
+
+    setActivePage(nextRequiredField.page);
+    paperGridRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
   const requiredFieldCount = countAnswerableFields(
     record.currentSignerFields,
     (field) => field.required,
@@ -899,12 +909,101 @@ export function SigningLiveShell({
     );
   }
 
+  // One page of the document with the fields on it. On phones every page is
+  // drawn one under the other, to scroll through like a chat; elsewhere one
+  // at a time, with the arrows.
+  const renderPage = (pageNumber: number, reportsRender: boolean) => {
+    const pageRecord =
+      record.pages.find((page) => page.pageNumber === pageNumber) ??
+      record.pages[0];
+
+    return (
+      <div
+        className="relative overflow-hidden rounded-md bg-white shadow-[0_1px_2px_rgba(28,29,43,0.08),0_12px_32px_rgba(28,29,43,0.12)]"
+        style={{
+          width: `${zoomLevel * 100}%`,
+        }}
+      >
+        <div
+          className="relative overflow-hidden"
+          data-field-viewport
+          style={{
+            aspectRatio: `${pageRecord?.widthPt ?? 8.5} / ${pageRecord?.heightPt ?? 11}`,
+          }}
+        >
+          <PdfPageCanvas
+            documentUrl={record.documentUrl}
+            onRenderStateChange={reportsRender ? setPdfRenderState : undefined}
+            pageNumber={pageNumber}
+          />
+
+          {isDocumentReady
+            ? record.visibleFields
+                .filter((field) => field.page === pageNumber)
+                .map((field) => (
+                  <VisibleFieldStamp field={field} key={field.id} />
+                ))
+            : null}
+
+          {isDocumentReady
+            ? record.currentSignerFields
+                .filter((field) => field.page === pageNumber)
+                .map((field) => (
+                  <CurrentSignerField
+                    checkboxValue={Boolean(checkboxValues[field.id])}
+                    field={field}
+                    key={field.id}
+                    localDateLabel={localDateLabel}
+                    isInvalid={hasInvalidNumber(field, textValues)}
+                    signerName={record.signer.name}
+                    onCheckboxChange={(checked) => {
+                      setSubmitError(null);
+                      setCheckboxValues((current) => {
+                        const next = {
+                          ...current,
+                          [field.id]: checked,
+                        };
+
+                        // Choosing one radio button lets go of
+                        // the others in its group.
+                        if (field.type === "radio" && checked) {
+                          for (const button of getRadioGroup(
+                            field,
+                            record.currentSignerFields,
+                          )) {
+                            if (button.id !== field.id) {
+                              next[button.id] = false;
+                            }
+                          }
+                        }
+
+                        return next;
+                      });
+                    }}
+                    onSignatureClick={() => handleSignatureFieldClick(field)}
+                    onTextChange={(value) => {
+                      setSubmitError(null);
+                      setTextValues((current) => ({
+                        ...current,
+                        [field.id]: value,
+                      }));
+                    }}
+                    signatureEntry={signatureValues[field.id]}
+                    textValue={textValues[field.id] ?? ""}
+                  />
+                ))
+            : null}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 bg-[rgba(243,244,248,0.88)] backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex min-w-0 items-center gap-5">
-            <Brand href="/" />
+            <Brand href={null} />
             <div className="hidden min-w-0 border-l border-(--border-strong) pl-5 sm:block">
               <p className="truncate text-sm font-bold text-(--fg)">
                 {record.envelopeTitle}
@@ -926,7 +1025,7 @@ export function SigningLiveShell({
               </span>
             </a>
             <ShellButton
-              className="min-h-11 px-4"
+              className="hidden min-h-11 px-4 sm:inline-flex"
               disabled={isSubmitting || isDeclining}
               onClick={() => {
                 setDeclineError(null);
@@ -949,9 +1048,29 @@ export function SigningLiveShell({
             )}
           </div>
         ) : null}
+        <section className="panel rounded-[1.25rem] px-4 py-4 sm:hidden">
+          <p className="text-[0.9375rem] font-bold leading-snug text-(--fg)">
+            {record.envelopeTitle}
+          </p>
+          <p className="mt-0.5 text-[0.8125rem] text-(--tertiary)">
+            {tr("Sent by {sender}", { sender: record.senderName })}
+          </p>
+          <ol className="mt-3 space-y-1.5 text-sm leading-5 text-(--secondary)">
+            <li>
+              {record.pageCount > 1
+                ? tr(
+                    "1. Read the document. It has {count} pages: use the arrows to turn them.",
+                    { count: record.pageCount },
+                  )
+                : tr("1. Read the document.")}
+            </li>
+            <li>{tr("2. Tap the blue box to sign.")}</li>
+            <li>{tr("3. Tap Finish at the bottom of the screen.")}</li>
+          </ol>
+        </section>
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="flex min-w-0 flex-col gap-4">
-            <div className="panel rounded-[1.25rem] px-4 py-3">
+            <div className="panel hidden rounded-[1.25rem] px-4 py-3 sm:block">
               <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[1fr_auto_1fr] xl:items-center">
                 <div className="flex justify-center xl:justify-start">
                   <DocumentZoomControls
@@ -1038,98 +1157,27 @@ export function SigningLiveShell({
                       : "flex justify-center"
                   }`}
                 >
-                  <div
-                    className="relative overflow-hidden rounded-md bg-white shadow-[0_1px_2px_rgba(28,29,43,0.08),0_12px_32px_rgba(28,29,43,0.12)]"
-                    style={{
-                      width: `${zoomLevel * 100}%`,
-                    }}
-                  >
-                    <div
-                      className="relative overflow-hidden"
-                      data-field-viewport
-                      style={{
-                        aspectRatio: `${activePageRecord?.widthPt ?? 8.5} / ${activePageRecord?.heightPt ?? 11}`,
-                      }}
-                    >
-                      <PdfPageCanvas
-                        documentUrl={record.documentUrl}
-                        onRenderStateChange={setPdfRenderState}
-                        pageNumber={activePage}
-                      />
-
-                      {isDocumentReady
-                        ? pageVisibleFields.map((field) => (
-                            <VisibleFieldStamp field={field} key={field.id} />
-                          ))
-                        : null}
-
-                      {isDocumentReady
-                        ? pageCurrentFields.map((field) => (
-                            <CurrentSignerField
-                              checkboxValue={Boolean(checkboxValues[field.id])}
-                              field={field}
-                              key={field.id}
-                              localDateLabel={localDateLabel}
-                              isInvalid={hasInvalidNumber(field, textValues)}
-                              signerName={record.signer.name}
-                              onCheckboxChange={(checked) => {
-                                setSubmitError(null);
-                                setCheckboxValues((current) => {
-                                  const next = {
-                                    ...current,
-                                    [field.id]: checked,
-                                  };
-
-                                  // Choosing one radio button lets go of
-                                  // the others in its group.
-                                  if (field.type === "radio" && checked) {
-                                    for (const button of getRadioGroup(
-                                      field,
-                                      record.currentSignerFields,
-                                    )) {
-                                      if (button.id !== field.id) {
-                                        next[button.id] = false;
-                                      }
-                                    }
-                                  }
-
-                                  return next;
-                                });
-                              }}
-                              onSignatureClick={() =>
-                                handleSignatureFieldClick(field)
-                              }
-                              onTextChange={(value) => {
-                                setSubmitError(null);
-                                setTextValues((current) => ({
-                                  ...current,
-                                  [field.id]: value,
-                                }));
-                              }}
-                              signatureEntry={signatureValues[field.id]}
-                              textValue={textValues[field.id] ?? ""}
-                            />
-                          ))
-                        : null}
-
-                      {isDocumentReady &&
-                      pageCurrentFields.length === 0 &&
-                      pageVisibleFields.length === 0 ? (
-                        <div className="absolute inset-0 z-1 flex items-center justify-center px-6">
-                          <div className="max-w-[320px] rounded-[1.25rem] border-2 border-dashed border-(--border-strong) bg-white/92 px-6 py-7 text-center">
-                            <p className="text-lg font-extrabold tracking-[-0.02em] text-(--fg)">
-                              {tr("No signer fields on this page")}
-                            </p>
-                            <p className="mt-2 text-sm leading-6 text-(--secondary)">
-                              {tr(
-                                "Move between pages to review your assigned fields and any completed values from earlier signers.",
-                              )}
-                            </p>
-                          </div>
+                  {isPhone ? (
+                    <div className="flex flex-col gap-4">
+                      {record.pages.map((page, index) => (
+                        <div
+                          id={`signing-page-${page.pageNumber}`}
+                          key={page.pageNumber}
+                          className="scroll-mt-24"
+                        >
+                          <p className="mb-1.5 text-center text-xs font-semibold text-(--tertiary)">
+                            {tr("Page {page} of {count}", {
+                              count: record.pageCount,
+                              page: page.pageNumber,
+                            })}
+                          </p>
+                          {renderPage(page.pageNumber, index === 0)}
                         </div>
-                      ) : null}
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    renderPage(activePage, true)
+                  )}
                 </div>
               </div>
             </div>
@@ -1183,11 +1231,13 @@ export function SigningLiveShell({
                     style={{ width: `${completionPercent}%` }}
                   />
                 </div>
-                <p className="mt-3 text-[0.8125rem] leading-5 text-(--secondary)">
-                  {tr(
-                    "Previous signer values stay visible but locked. Only your assigned fields are interactive.",
-                  )}
-                </p>
+                {record.visibleFields.length > 0 ? (
+                  <p className="mt-3 text-[0.8125rem] leading-5 text-(--secondary)">
+                    {tr(
+                      "Previous signer values stay visible but locked. Only your assigned fields are interactive.",
+                    )}
+                  </p>
+                ) : null}
               </div>
 
               <div className="mt-4">
@@ -1235,9 +1285,46 @@ export function SigningLiveShell({
                 ))}
               </div>
             </section>
+
+            <div className="pb-24 text-center sm:hidden">
+              <button
+                className="text-sm font-semibold text-(--secondary) underline underline-offset-4"
+                disabled={isSubmitting || isDeclining}
+                onClick={() => {
+                  setDeclineError(null);
+                  setIsDeclineDialogOpen(true);
+                }}
+                type="button"
+              >
+                {tr("I do not want to sign")}
+              </button>
+            </div>
           </aside>
         </section>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-(--border) bg-(--paper) px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] sm:hidden">
+        {canFinish ? (
+          <ShellButton
+            className="w-full"
+            disabled={isDeclining || isSubmitting}
+            onClick={() => {
+              setSubmitError(null);
+              setIsFinishDialogOpen(true);
+            }}
+          >
+            {tr("Finish")}
+          </ShellButton>
+        ) : (
+          <ShellButton className="w-full" onClick={goToNextField}>
+            {nextRequiredField && nextRequiredField.page !== activePage
+              ? tr("Go to the signature (page {page})", {
+                  page: nextRequiredField.page,
+                })
+              : tr("Tap the blue box to sign")}
+          </ShellButton>
+        )}
+      </div>
 
       <PublicLegalFooter />
 
@@ -2385,4 +2472,21 @@ function FieldStatusRow({
       </span>
     </div>
   );
+}
+
+/** Phones (below Tailwind's sm): the document scrolls as one long page. */
+function useIsPhone() {
+  const [isPhone, setIsPhone] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsPhone(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isPhone;
 }

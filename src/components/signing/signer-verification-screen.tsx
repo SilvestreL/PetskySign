@@ -155,12 +155,12 @@ export function SignerVerificationScreen({
     <div className="flex min-h-screen flex-col">
       <header>
         <div className="page-width flex items-center py-4">
-          <Brand href="/" />
+          <Brand href={null} />
         </div>
       </header>
-      <main className="page-width flex flex-1 items-center justify-center py-10">
+      <main className="page-width flex flex-1 items-start justify-center py-4 sm:items-center sm:py-10">
         <section
-          className="panel w-full max-w-[560px] px-6 py-10 sm:px-10 sm:py-12"
+          className="panel w-full max-w-[560px] px-5 py-7 sm:px-10 sm:py-12"
           data-animate="enter"
         >
           <span
@@ -180,6 +180,9 @@ export function SignerVerificationScreen({
             {state.required.length > 1
               ? ` ${tr("Step {step} of {count}.", { count: state.required.length, step })}`
               : ""}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-(--tertiary)">
+            {tr("This keeps your data safe: only you can open this document.")}
           </p>
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit}>
             {method === "account" ? (
@@ -218,13 +221,22 @@ export function SignerVerificationScreen({
               }
               helper={tr(copy.helper)}
               label={tr(copy.label)}
-              inputMode={method === "identity" ? "numeric" : undefined}
+              inputMode={
+                method === "identity" ||
+                method === "email_code" ||
+                method === "whatsapp_code"
+                  ? "numeric"
+                  : undefined
+              }
               name="signer-code"
               onChange={(event) =>
                 setCode(
                   method === "identity"
                     ? formatCpfInput(event.target.value)
-                    : event.target.value,
+                    : method === "email_code" || method === "whatsapp_code"
+                      ? // A pasted code may come with spaces or a dash.
+                        event.target.value.replace(/\D/g, "").slice(0, 6)
+                      : event.target.value,
                 )
               }
               placeholder={method === "identity" ? "000.000.000-00" : undefined}
