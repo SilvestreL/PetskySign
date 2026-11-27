@@ -20,7 +20,7 @@ import {
 } from "../signing.ts";
 import { createApiDocument, createApiDocumentSchema } from "./api-documents.ts";
 import { authenticateApiKey, createApiKey } from "./api-keys.ts";
-import { IDENTITY_MAX_ATTEMPTS } from "./cpf.ts";
+import { decryptCpf, IDENTITY_MAX_ATTEMPTS, normalizeCpf } from "./cpf.ts";
 
 // The identity check (full name and CPF) and the emailed code, sent through
 // the API, against a real Postgres. Run with `npm run test:db`.
@@ -225,12 +225,23 @@ test("with a CPF, the document opens only after the right full name and CPF", as
     { database, verifiedMethods: passed },
   );
 
-  const signed = await database.query<{ metadata: { authMethods?: string[] } }>(
+  const signed = await database.query<{
+    metadata: { authMethods?: string[]; identityCpfEncrypted?: string };
+  }>(
     `select metadata from audit_events where envelope_id = $1 and event = 'signed'`,
     [documentId],
   );
 
   assert.deepEqual(signed.rows[0]?.metadata.authMethods, ["identity"]);
+  // The full CPF, for the certificate: encrypted, never in the clear.
+  assert.doesNotMatch(
+    JSON.stringify(signed.rows[0]?.metadata),
+    new RegExp(normalizeCpf(CPF)!),
+  );
+  assert.equal(
+    decryptCpf(signed.rows[0]?.metadata.identityCpfEncrypted),
+    normalizeCpf(CPF),
+  );
 });
 
 test("after too many wrong CPFs, even the right one is refused", async () => {

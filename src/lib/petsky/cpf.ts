@@ -1,4 +1,11 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 import { isProduction, resolveAuthSecret } from "../utils/env.ts";
 
@@ -95,6 +102,59 @@ export function cpfMatches(cpf: string, storedHash: string): boolean {
   return (
     pepper() !== null && sameHex(hmacCpf(authSecretKey(), cpf), storedHash)
   );
+}
+
+/**
+ * The full CPF, encrypted (AES-256-GCM), so the signed contract's certificate
+ * can show it as D4Sign's does: many contracts name the tutor only "by the
+ * name and CPF on the signatures page". The key comes from the same secret
+ * as the hash, so a leaked database alone shows no CPF.
+ */
+function encryptionKey(): Buffer {
+  return createHash("sha256")
+    .update(
+      `petskysign/signer-cpf-encryption/v1:${pepper() ?? authSecretKey()}`,
+    )
+    .digest();
+}
+
+export function encryptCpf(cpf: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
+  const data = Buffer.concat([cipher.update(cpf, "utf8"), cipher.final()]);
+
+  return `v1.${iv.toString("base64url")}.${cipher.getAuthTag().toString("base64url")}.${data.toString("base64url")}`;
+}
+
+/** null when it cannot be read (another key, or tampered with). */
+export function decryptCpf(value: string | null | undefined): string | null {
+  const [version, iv, tag, data] = (value ?? "").split(".");
+
+  if (version !== "v1" || !iv || !tag || !data) {
+    return null;
+  }
+
+  try {
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      encryptionKey(),
+      Buffer.from(iv, "base64url"),
+    );
+
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+
+    return Buffer.concat([
+      decipher.update(Buffer.from(data, "base64url")),
+      decipher.final(),
+    ]).toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
+/** "078.394.104-89" */
+export function formatCpf(cpf: string): string {
+  return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
 }
 
 /** "078.***.***-89": enough to tell CPFs apart in the audit trail. */

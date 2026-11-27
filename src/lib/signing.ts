@@ -1042,6 +1042,8 @@ function buildSignedAuditEvent(input: {
   deviceLocation?: DeviceLocation | null;
   deviceLocationStatus?: DeviceLocationStatus | null;
   envelopeId: string;
+  /** PetskySign: the full CPF, encrypted (cpf.ts), for the certificate. */
+  identityCpfEncrypted?: string | null;
   part11?: Part11SignatureRecord | null;
   providerSignature?: ProviderSignatureEvidence | null;
   signatureMethods: readonly string[];
@@ -1066,6 +1068,9 @@ function buildSignedAuditEvent(input: {
       authMethods: [...input.authMethods],
       signatureMethods: [...input.signatureMethods],
       timezoneOffsetMinutes: input.timezoneOffsetMinutes,
+      ...(input.identityCpfEncrypted
+        ? { identityCpfEncrypted: input.identityCpfEncrypted }
+        : {}),
       ...(input.part11 ? { part11: input.part11 } : {}),
       ...(input.providerSignature
         ? { providerSignature: input.providerSignature }
@@ -2759,9 +2764,16 @@ export async function submitSigningForToken(
       });
     }
 
+    const identityCpfEncrypted = (
+      await database.query<{ value: string | null }>(
+        `SELECT identity_cpf_encrypted AS value FROM signers WHERE id = $1`,
+        [context.signer.id],
+      )
+    ).rows[0]?.value;
     const signedAuditEvent = buildSignedAuditEvent({
       authMethods: signerChecks.passed,
       envelopeId: context.envelope.id,
+      identityCpfEncrypted: identityCpfEncrypted ?? null,
       part11: part11Signature,
       providerSignature: providerSignature?.evidence ?? null,
       signatureMethods: [

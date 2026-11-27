@@ -34,7 +34,7 @@ import {
   prepareDocumentBranding,
 } from "./document-branding.ts";
 import { displayEmail, placeholderEmailFor } from "./placeholder-email.ts";
-import { hashCpf, maskCpf, normalizeCpf } from "./cpf.ts";
+import { encryptCpf, hashCpf, maskCpf, normalizeCpf } from "./cpf.ts";
 import { getEvolutionConfig, normalizeBrazilMobile } from "./whatsapp.ts";
 
 /**
@@ -326,10 +326,13 @@ export async function createApiDocument(
       await database.query(
         `
           UPDATE signers
-          SET identity_cpf_hash = $1, identity_cpf_hint = $2
+          SET
+            identity_cpf_hash = $1,
+            identity_cpf_hint = $2,
+            identity_cpf_encrypted = $5
           WHERE id = $3 AND envelope_id = $4
         `,
-        [hashCpf(cpf), maskCpf(cpf), signerId, envelopeId],
+        [hashCpf(cpf), maskCpf(cpf), signerId, envelopeId, encryptCpf(cpf)],
       );
     }
 
