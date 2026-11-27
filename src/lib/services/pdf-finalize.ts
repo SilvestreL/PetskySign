@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { decryptCpf, formatCpf } from "../petsky/cpf.ts";
 import { PDFDocument, type PDFImage, type PDFPage, rgb } from "pdf-lib";
 
 import {
@@ -1372,8 +1373,18 @@ function describeSignedEvent(
       candidate.metadata?.method === "identity" &&
       (signerId === null || candidate.metadata?.signerId === signerId),
   );
-  const cpf =
-    typeof identity?.metadata?.cpf === "string" ? identity.metadata.cpf : null;
+  // PetskySign: the full CPF when the signer passed the CPF check (it is
+  // the one on file, and the contract may name the tutor by it); masked
+  // otherwise, as in older documents.
+  const fullCpf =
+    identity && typeof metadata.identityCpfEncrypted === "string"
+      ? decryptCpf(metadata.identityCpfEncrypted)
+      : null;
+  const cpf = fullCpf
+    ? formatCpf(fullCpf)
+    : typeof identity?.metadata?.cpf === "string"
+      ? identity.metadata.cpf
+      : null;
   const checks = readStringArray(metadata.authMethods).map((method) =>
     authenticationLabel(method),
   );

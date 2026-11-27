@@ -3,6 +3,9 @@ import { test } from "node:test";
 
 import {
   cpfMatches,
+  decryptCpf,
+  encryptCpf,
+  formatCpf,
   hashCpf,
   isFullName,
   maskCpf,
@@ -48,6 +51,24 @@ test("with CPF_HASH_PEPPER, new hashes use it and old ones still match", () => {
     assert.equal(cpfMatches(CPF, peppered), true);
     assert.equal(cpfMatches(CPF, legacy), true);
     assert.equal(cpfMatches("11144477735", legacy), false);
+  } finally {
+    delete process.env.CPF_HASH_PEPPER;
+  }
+});
+
+test("the CPF is kept encrypted, readable only with the same key", () => {
+  const stored = encryptCpf(CPF);
+
+  assert.doesNotMatch(stored, /52998224725/);
+  assert.equal(decryptCpf(stored), CPF);
+  assert.notEqual(encryptCpf(CPF), stored);
+  assert.equal(decryptCpf(stored.replace(/.$/, "A")), null);
+  assert.equal(decryptCpf(null), null);
+  assert.equal(formatCpf(CPF), "529.982.247-25");
+
+  process.env.CPF_HASH_PEPPER = "another-key";
+  try {
+    assert.equal(decryptCpf(stored), null);
   } finally {
     delete process.env.CPF_HASH_PEPPER;
   }
