@@ -175,7 +175,9 @@ test("the document opens only with the code sent by WhatsApp", async () => {
   assert.equal(delivered.maskedPhone, "(82) •••••-7758");
   assert.equal(message?.to, "5582996057758");
 
-  const code = message?.text.match(/\b(\d{6})\b/)?.[1];
+  // The code comes alone in its own message, easy to copy.
+  assert.match(message?.text ?? "", /^\d{6}$/);
+  const code = message?.text;
 
   assert.ok(code, message?.text);
 
@@ -231,7 +233,8 @@ test("a send that fails can be tried again at once", async () => {
   const before = sent.length;
 
   await sendSignerWhatsappCode(token, { database, sendWhatsapp: fakeSender });
-  assert.equal(sent.length, before + 1);
+  // The explanation, then the code alone.
+  assert.equal(sent.length, before + 2);
 });
 
 test("with a CPF too, name and CPF come first, then the WhatsApp code", async () => {

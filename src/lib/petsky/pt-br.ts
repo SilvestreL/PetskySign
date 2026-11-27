@@ -7,8 +7,8 @@ export const PT_BR: Readonly<Record<string, string>> = {
   // Tela de assinatura
   "1 required field remaining": "Falta 1 campo obrigatório",
   "{count} required fields remaining": "Faltam {count} campos obrigatórios",
-  "{count} required remaining": "Faltam {count} obrigatórios",
-  "1 required remaining": "Falta 1 obrigatório",
+  "{count} required remaining": "Faltam {count} campos",
+  "1 required remaining": "Falta 1 campo",
   "Download PDF": "Baixar PDF",
   "Zoom out": "Diminuir",
   "Zoom in": "Aumentar",
@@ -44,7 +44,7 @@ export const PT_BR: Readonly<Record<string, string>> = {
   Clear: "Limpar",
   Complete: "Preenchido",
   "Continue to {provider}": "Continuar em {provider}",
-  "Current signer view": "Sua vez de assinar",
+  "Current signer view": "Toque no campo azul",
   Date: "Data",
   Decline: "Recusar",
   "Decline to sign": "Recusar assinatura",
@@ -105,6 +105,20 @@ export const PT_BR: Readonly<Record<string, string>> = {
   Signature: "Assinatura",
   "Signature preview": "Prévia da assinatura",
   "Tap to sign": "Toque para assinar",
+  "Sent by {sender}": "Enviado por {sender}",
+  "1. Read the document. It has {count} pages: use the arrows to turn them.":
+    "1. Leia o documento. Ele tem {count} páginas: use as setas para passar.",
+  "1. Read the document.": "1. Leia o documento.",
+  "2. Tap the blue box to sign.": "2. Toque no quadro azul para assinar.",
+  "3. Tap Finish at the bottom of the screen.":
+    "3. Toque em Concluir, no fim da tela.",
+  "I do not want to sign": "Não quero assinar",
+  'Your code to open "{title}", sent by {sender}, is in the next message. It works for {minutes} minutes. Do not share it with anyone.':
+    'Seu código para abrir "{title}", enviado por {sender}, está na próxima mensagem. Ele vale por {minutes} minutos. Não passe para ninguém.',
+  "This keeps your data safe: only you can open this document.":
+    "Isso protege seus dados: só você consegue abrir este documento.",
+  "Go to the signature (page {page})": "Ir para a assinatura (página {page})",
+  "Tap the blue box to sign": "Toque no quadro azul para assinar",
   Text: "Texto",
   "Text input": "Campo de texto",
   "The sender ({sender}) will be notified that you declined. This cannot be undone.":
@@ -394,8 +408,6 @@ export const PT_BR: Readonly<Record<string, string>> = {
   "A code was sent to the WhatsApp {phone}.":
     "Enviamos um código para o WhatsApp {phone}.",
   "Send me a code on WhatsApp": "Me mandar o código no WhatsApp",
-  '{code} is your code to open "{title}", sent by {sender}. It works for {minutes} minutes. Do not share it.':
-    '{code} é o seu código para abrir "{title}", enviado por {sender}. Vale por {minutes} minutos. Não compartilhe.',
   "We send a 6-digit code to your WhatsApp.":
     "Mandamos um código de 6 dígitos para o seu WhatsApp.",
   "Code from your WhatsApp": "Código do WhatsApp",

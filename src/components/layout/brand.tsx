@@ -8,9 +8,33 @@ import { cn } from "@/lib/cn";
 type BrandProps = {
   className?: string;
   compact?: boolean;
-  href?: string;
+  /** null: not a link (pages for signers, who have no account here). */
+  href?: string | null;
   labelClassName?: string;
 };
+
+/** PetskySign: a tutor tapping the logo should not land on a login page. */
+function BrandWrapper({
+  children,
+  className,
+  href,
+  label,
+}: {
+  children: React.ReactNode;
+  className: string;
+  href: string | null;
+  label: string;
+}) {
+  return href === null ? (
+    <span aria-label={label} className={className} role="img">
+      {children}
+    </span>
+  ) : (
+    <Link aria-label={label} className={className} href={href}>
+      {children}
+    </Link>
+  );
+}
 
 export function Brand({
   className = "",
@@ -24,24 +48,24 @@ export function Brand({
   // still carries the name, for people who cannot see the picture.
   if (logoUrl) {
     return (
-      <Link
-        aria-label={productName}
-        className={cn("inline-flex min-w-0 items-center", className)}
+      <BrandWrapper
         href={href}
+        label={productName}
+        className={cn("inline-flex min-w-0 items-center", className)}
       >
         <BrandLogo compact={compact} src={logoUrl} />
-      </Link>
+      </BrandWrapper>
     );
   }
 
   return (
-    <Link
-      aria-label={productName}
+    <BrandWrapper
+      href={href}
+      label={productName}
       className={cn(
         "inline-flex min-w-0 items-center gap-2.5 text-(--fg)",
         className,
       )}
-      href={href}
     >
       <BrandMark />
       {!compact ? (
@@ -54,7 +78,7 @@ export function Brand({
           {productName}
         </span>
       ) : null}
-    </Link>
+    </BrandWrapper>
   );
 }
 
